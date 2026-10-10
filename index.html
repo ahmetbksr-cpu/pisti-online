@@ -73,7 +73,7 @@
             <h2 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 mb-2">PİŞTİ</h2>
             <p class="text-sm text-gray-300 mb-4">Oyuna başlamak için bir yöntem seçin.</p>
             
-            <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-bold py-3 px-4 rounded-xl shadow-[0_4px_15px_rgba(255,255,255,0.2)] hover:bg-gray-100 active:scale-95 transition-all mb-2">
+            <button onclick="googleIleGirisYap()" class="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-bold py-3 px-4 rounded-xl shadow-[0_4px_15px_rgba(255,255,255,0.2)] hover:bg-gray-100 active:scale-95 transition-all mb-2">
                 <svg class="w-6 h-6" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -286,7 +286,7 @@
 
     <!-- OYUN KODLARI -->
     <script>
-        const socket = io(); 
+        const socket = io("https://pisti-online.onrender.com");
         let currentRoomId = null;
         let acceptTimerInterval = null;
         let toastTimeout = null;
@@ -837,6 +837,47 @@
         document.querySelectorAll('.diff-btn').forEach(btn => { btn.addEventListener('click', (e) => { document.querySelectorAll('.diff-btn').forEach(b => { b.classList.remove('bg-white/20', 'text-white', 'shadow-md'); b.classList.add('text-gray-400'); }); e.target.classList.add('bg-white/20', 'text-white', 'shadow-md'); e.target.classList.remove('text-gray-400'); GameState.botDifficulty = e.target.dataset.diff; sessionStorage.setItem('botDifficulty', GameState.botDifficulty); }); });
         
         const settingsModal = document.getElementById('settings-modal'); document.getElementById('settings-btn').addEventListener('click', () => settingsModal.classList.remove('hidden')); document.getElementById('resume-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
+    </script>
+<!-- 1. BURAYA YAPIŞTIRIN: Firebase Kodları -->
+	<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyB09TvSdFqYkPcLUaaIaVFjJOcqcxYsrlA",
+        authDomain: "pisti-online-7f392.firebaseapp.com",
+        projectId: "pisti-online-7f392",
+        storageBucket: "pisti-online-7f392.firebasestorage.app",
+        messagingSenderId: "704314432015",
+        appId: "1:704314432015:web:1fdc92b1e4ccf73de3a17a",
+        measurementId: "G-J59NDVSZZT"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const provider = new firebase.auth.GoogleAuthProvider();
+
+      function googleIleGirisYap() {
+        auth.signInWithPopup(provider).then((result) => {
+            const user = result.user;
+            console.log("Giriş Başarılı:", user.displayName);
+            document.getElementById('login-modal').style.display = 'none'; 
+            document.getElementById('game-screen').style.display = 'block'; 
+            if (typeof socket !== 'undefined') {
+                socket.emit('playerLogin', { name: user.displayName, photo: user.photoURL });
+            }
+        }).catch((error) => {
+            alert("Giriş başarısız: " + error.message);
+        });
+      }
+    </script>
+    <!-- Firebase Kodlarının Sonu -->
+
+
+    <!-- 2. SİZİN MEVCUT OYUN KODLARINIZ BURADA KALACAK -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io("https://pisti-online.onrender.com");
+        // ... (Kendi yazdığınız diğer oyun kodları) ...
     </script>
 </body>
 </html>
