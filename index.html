@@ -32,7 +32,7 @@
         .floating-card-bg { position: absolute; width: 100px; height: 145px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; pointer-events: none; animation: float 10s infinite linear; }
         @keyframes float { 0% { transform: translateY(100vh) rotate(0deg); opacity: 0; } 10% { opacity: 0.5; } 90% { opacity: 0.5; } 100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; } }
 
-        .playing-card { position: absolute; width: var(--card-w); height: var(--card-h); transition: top var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), left var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), transform var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: center center; top: -200px; left: 50%; touch-action: none; will-change: top, left, transform; transform: translateZ(0); }
+        .playing-card { position: absolute; width: var(--card-w); height: var(--card-h); transition: top var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), left var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), transform var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: center center; top: -200px; left: 50%; touch-action: none; will-change: top, left, transform; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
         .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.5s; transform-style: preserve-3d; border-radius: 8px; box-shadow: 0 8px 18px rgba(0,0,0,0.6); }
         .playing-card.playable .card-inner:hover { transform: translateY(-15px) scale(1.05); box-shadow: 0 20px 30px rgba(0,0,0,0.8); cursor: pointer; }
         .playing-card.face-up .card-inner { transform: rotateY(180deg); }
@@ -810,7 +810,11 @@
         function renderBoard() {
             const w = window.innerWidth; const h = window.innerHeight; const cx = w / 2; const cy = h / 2; const isMob = w < 768; const deckX = isMob ? 30 : 60; const deckY = cy; const pCapX = w + 50; const pCapY = h + 50; const bCapX = -50; const bCapY = -50; 
             const deckVis = document.getElementById('deck-visual'); deckVis.style.left = `${deckX - (isMob ? 32 : 42)}px`; let deckHeightOffset = Math.floor(GameState.deck.length / 3); deckVis.style.top = `${deckY - (isMob ? 50 : 62) - deckHeightOffset}px`;
-            let shadow = ''; let layers = Math.max(0, Math.floor(GameState.deck.length / 2)); for(let i=1; i<=layers; i++) { let color = i % 2 === 0 ? '#fff' : '#111'; shadow += `-${i}px ${i}px 0 ${color}${i === layers ? '' : ','}`; } deckVis.style.boxShadow = shadow || 'none'; deckVis.style.opacity = GameState.deck.length > 0 ? '1' : '0';
+            
+            // YENİ: 26 katmanlı yorucu gölge yerine, hafif 3D deste efekti
+            let deckThickness = Math.min(5, Math.floor(GameState.deck.length / 4)); 
+            deckVis.style.boxShadow = GameState.deck.length > 0 ? `-1px 1px 0 #fff, -2px 2px 0 #111, -${deckThickness}px ${deckThickness}px 8px rgba(0,0,0,0.6)` : 'none'; 
+            deckVis.style.opacity = GameState.deck.length > 0 ? '1' : '0';
 
             const pistiCardIds = new Set();
             GameState.playerPistiPairs.forEach((pair, index) => { pistiCardIds.add(pair.bottom); pistiCardIds.add(pair.top); let xOffset = index * 80; let bCard = allCards.find(c => c.id === pair.bottom); if(bCard) { bCard.state = 'custom'; bCard.targetX = 60 + xOffset; bCard.targetY = h - 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } let tCard = allCards.find(c => c.id === pair.top); if(tCard) { tCard.state = 'custom'; tCard.targetX = 60 + xOffset + 25; tCard.targetY = h - 60 + 10; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } });
