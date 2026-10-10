@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pişti Oyna</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
+        
+        :root { --card-w: 65px; --card-h: 100px; --anim-speed: 0.8s; }
+        @media (min-width: 768px) { :root { --card-w: 85px; --card-h: 125px; } }
+
+        body {
+            margin: 0; padding: 0; min-height: 100vh; width: 100vw;
+            background-color: #0a3818;
+            background-image: 
+                radial-gradient(circle at 50% 40%, rgba(38, 142, 73, 0.45) 0%, rgba(4, 25, 10, 0.95) 100%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='3.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white; overflow: hidden; touch-action: none;
+        }
+
+        #game-board { position: absolute; inset: 0; perspective: 1000px; display: none; }
+        #start-screen { background: transparent; display: none; } 
+        
+        .floating-card-bg { position: absolute; width: 100px; height: 145px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; pointer-events: none; animation: float 10s infinite linear; }
+        @keyframes float { 0% { transform: translateY(100vh) rotate(0deg); opacity: 0; } 10% { opacity: 0.5; } 90% { opacity: 0.5; } 100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; } }
+
+        .playing-card { position: absolute; width: var(--card-w); height: var(--card-h); transition: top var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), left var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), transform var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: center center; top: -200px; left: 50%; touch-action: none; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.5s; transform-style: preserve-3d; border-radius: 8px; box-shadow: 0 8px 18px rgba(0,0,0,0.6); }
+        .playing-card.playable .card-inner:hover { transform: translateY(-15px) scale(1.05); box-shadow: 0 20px 30px rgba(0,0,0,0.8); cursor: pointer; }
+        .playing-card.face-up .card-inner { transform: rotateY(180deg); }
+        .playing-card.playable.face-up .card-inner:hover { transform: translateY(-15px) scale(1.05) rotateY(180deg); }
+        .card-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-back { background: repeating-linear-gradient(45deg, #991b1b 0, #991b1b 6px, #b91c1c 6px, #b91c1c 12px); border: 3px solid #f8fafc; }
+        .card-front { background: #fff; transform: rotateY(180deg); padding: 4px; border: 1px solid #ccc; }
+        .card-front.red { color: #dc2626; } .card-front.black { color: #171717; }
+        .card-corner { display: flex; flex-direction: column; align-items: center; font-weight: 800; line-height: 0.9; font-size: 1rem; }
+        @media (min-width: 768px) { .card-corner { font-size: 1.2rem; } }
+        .card-corner.bottom { transform: rotate(180deg); }
+        .card-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; }
+
+        #deck-visual { position: absolute; width: var(--card-w); height: var(--card-h); border-radius: 8px; background: repeating-linear-gradient(45deg, #991b1b 0, #991b1b 6px, #b91c1c 6px, #b91c1c 12px); border: 2px solid #fff; transition: box-shadow 0.3s, opacity 0.3s, top 0.3s; z-index: 10; }
+        .hud-box { position: relative; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 8px 16px; text-align: center; z-index: 50; }
+        .score-text { font-size: 1.8rem; font-weight: 800; transition: transform 0.2s; }
+        .score-pulse { transform: scale(1.4); color: #fbbf24; text-shadow: 0 0 15px #fbbf24; }
+        #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
+        .static-card { width: 70px; height: 105px; background: white; border-radius: 8px; padding: 4px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-family: 'Poppins', sans-serif; font-weight: 800; position: relative; }
+        .static-card.red { color: #dc2626; } .static-card.black { color: #171717; }
+        .s-corner { display: flex; flex-direction: column; align-items: center; line-height: 0.9; }
+        .s-corner.bottom { transform: rotate(180deg); }
+        .s-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        input[type="range"] { -webkit-appearance: none; background: rgba(255, 255, 255, 0.2); height: 6px; border-radius: 5px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #22c55e; cursor: pointer; box-shadow: 0 0 10px rgba(34, 197, 94, 0.8); }
+        @keyframes floatUp { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 20% { transform: translate(-50%, -60%) scale(1.2); opacity: 1; } 80% { transform: translate(-50%, -100%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -120%) scale(1); opacity: 0; } }
+        .floating-pisti-text { position: absolute; font-family: 'Poppins', sans-serif; font-size: 3.5rem; font-weight: 900; font-style: italic; animation: floatUp 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; pointer-events: none; z-index: 1000; }
+        .bot-reaction { position: absolute; top: -15px; right: -15px; font-size: 2.5rem; opacity: 0; transform: scale(0); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; z-index: 60; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
+        .bot-reaction.show { opacity: 1; transform: scale(1) rotate(10deg); }
+    </style>
+</head>
+<body>
+
+    <div id="toast-notification" class="fixed top-[-100px] left-1/2 -translate-x-1/2 z-[9999] bg-black/90 backdrop-blur-md border border-white/20 text-white px-6 py-3 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.8)] font-bold transition-all duration-500 opacity-0 pointer-events-none flex items-center gap-3">
+        <span id="toast-icon" class="text-xl">ℹ️</span>
+        <span id="toast-message" class="text-sm tracking-wide">Bildirim mesajı</span>
+    </div>
+
+    <!-- GİRİŞ EKRANI -->
+    <div id="login-modal" class="fixed inset-0 bg-black/95 flex justify-center items-center z-[9999] backdrop-blur-xl">
+        <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-sm flex flex-col items-center gap-4 text-center border-t-4 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.2)]">
+            <h2 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 mb-2">PİŞTİ</h2>
+            <p class="text-sm text-gray-300 mb-4">Oyuna başlamak için bir yöntem seçin.</p>
+            
+            <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-bold py-3 px-4 rounded-xl shadow-[0_4px_15px_rgba(255,255,255,0.2)] hover:bg-gray-100 active:scale-95 transition-all mb-2">
+                <svg class="w-6 h-6" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Google ile Bağlan
+            </button>
+
+            <button onclick="loginAsGuest()" class="w-full bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg active:scale-95 transition-all">
+                👤 Misafir Girişi
+            </button>
+        </div>
+    </div>
+
+    <!-- Ana Menü -->
+    <div id="start-screen" class="fixed inset-0 z-[300] flex items-center justify-center">
+        <div class="absolute top-6 flex items-center justify-center bg-black/70 backdrop-blur-md border border-white/10 px-5 py-2 rounded-2xl shadow-xl z-[310]">
+            <div id="menu-rank-icon" class="text-3xl mr-3 filter drop-shadow-md">🥚</div>
+            <div class="flex flex-col justify-center">
+                <span id="menu-rank-title" class="text-xs font-black uppercase tracking-wider text-gray-300">Çaylak</span>
+                <div class="flex items-end gap-1">
+                    <span id="menu-username-display" class="text-[10px] text-yellow-500 font-bold uppercase tracking-widest leading-none pb-0.5 mr-1"></span>
+                    <span class="text-[10px] text-white/50 font-bold uppercase tracking-widest leading-none pb-0.5">ELO:</span>
+                    <span id="menu-elo" class="text-lg font-black text-yellow-400 leading-none drop-shadow-md" style="font-family: 'Poppins', sans-serif;">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="floating-card-bg" style="left: 10%; animation-duration: 12s; animation-delay: 0s;"></div>
+        <div class="floating-card-bg" style="left: 30%; animation-duration: 9s; animation-delay: 2s;"></div>
+        <div class="floating-card-bg" style="left: 60%; animation-duration: 14s; animation-delay: 1s;"></div>
+        <div class="floating-card-bg" style="left: 80%; animation-duration: 10s; animation-delay: 3s;"></div>
+        
+        <div class="relative z-10 flex flex-col items-center p-10 glass-panel rounded-3xl w-11/12 max-w-lg mt-12">
+            <div class="flex gap-2 mb-2">
+                <span class="text-4xl">♠</span><span class="text-4xl text-red-500">♥</span>
+                <span class="text-4xl text-red-500">♦</span><span class="text-4xl">♣</span>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] mb-6 text-center" style="font-family: 'Poppins', sans-serif;">PİŞTİ OYNA</h1>
+            
+            <div class="w-full flex flex-col items-center mb-8">
+                <span class="text-xs text-gray-400 font-bold tracking-widest mb-2 uppercase">Bot Zorluğu</span>
+                <div class="flex bg-black/40 rounded-xl p-1 border border-white/10 w-full max-w-[280px]">
+                    <button class="diff-btn flex-1 py-2 rounded-lg text-xs md:text-sm font-bold transition-all text-gray-400 hover:text-white" data-diff="kolay">KOLAY</button>
+                    <button class="diff-btn flex-1 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-white/20 text-white shadow-md" data-diff="orta">ORTA</button>
+                    <button class="diff-btn flex-1 py-2 rounded-lg text-xs md:text-sm font-bold transition-all text-gray-400 hover:text-white" data-diff="zor">ZOR</button>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 w-full">
+                <button onclick="initiateGame('single')" class="group relative flex-1 py-4 font-bold text-lg rounded-2xl text-white bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all hover:scale-105 active:scale-95 border border-blue-400/30">
+                    <div class="flex flex-col items-center leading-tight">
+                        <span>SINGLEPLAYER</span>
+                        <span class="text-[10px] text-blue-200 font-normal uppercase tracking-widest mt-1">Bot'a Karşı</span>
+                    </div>
+                </button>
+                
+                <button onclick="findMultiplayerMatch()" class="group relative flex-1 py-4 font-bold text-lg rounded-2xl text-white bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-500 hover:to-purple-700 shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all hover:scale-105 active:scale-95 border border-purple-400/30">
+                    <div class="flex flex-col items-center leading-tight">
+                        <span>MULTIPLAYER</span>
+                        <span class="text-[10px] text-purple-200 font-normal uppercase tracking-widest mt-1">Gerçek Rakip Bul</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Eşleştirme Bekleme Ekranı -->
+    <div id="matchmaking-screen" class="fixed inset-0 bg-black/90 flex flex-col justify-center items-center z-[400] hidden backdrop-blur-md">
+        <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-sm flex flex-col items-center gap-4 text-center">
+            <div class="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+            <h2 class="text-2xl font-black text-white tracking-wider" id="matchmaking-title">RAKİP ARANIYOR...</h2>
+            <p class="text-sm text-gray-400" id="matchmaking-desc">Senin yetenek seviyene (ELO: <span id="search-elo-display">0</span>) uygun bir oyuncu aranıyor.</p>
+            <button onclick="cancelMatchmaking()" class="mt-4 w-full bg-red-600/90 hover:bg-red-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all">İPTAL ET</button>
+        </div>
+    </div>
+
+    <!-- Maç Kabul Et Ekranı -->
+    <div id="match-accept-screen" class="fixed inset-0 bg-black/95 flex flex-col justify-center items-center z-[500] hidden backdrop-blur-xl">
+        <div class="glass-panel p-10 rounded-3xl w-11/12 max-w-sm flex flex-col items-center gap-6 text-center border-green-500/30 border-2">
+            <div class="text-6xl mb-2 animate-bounce">⚔️</div>
+            <h2 class="text-3xl font-black tracking-widest text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.8)]">RAKİP BULUNDU!</h2>
+            <p class="text-gray-300">Kalan Süre: <span id="accept-timer" class="font-black text-yellow-400 text-2xl">15</span> sn</p>
+            
+            <button id="accept-match-btn" onclick="acceptMatch()" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 text-white font-black text-xl py-4 rounded-xl shadow-[0_0_30px_rgba(74,222,128,0.5)] active:scale-95 transition-all mt-2">MAÇI KABUL ET</button>
+            <button onclick="declineMatch()" class="mt-3 px-6 py-1.5 rounded-full text-xs font-bold text-red-500 border border-red-500/50 hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-[0_0_10px_rgba(239,68,68,0.2)]">REDDET</button>
+        </div>
+    </div>
+
+    <!-- Main Game Board -->
+    <div id="game-board">
+        <button id="settings-btn" class="absolute top-4 right-4 z-[60] bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white p-3 rounded-full shadow-lg transition-all hover:rotate-90 active:scale-95">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </button>
+        
+        <div id="hud-tournament" class="absolute top-4 right-20 z-[60] bg-black/40 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-xl shadow-lg font-bold text-sm hidden md:block">
+            Hedef 101: Sen <span id="hud-total-player" class="text-green-400">0</span> - <span id="hud-total-bot" class="text-red-400">0</span> Ahmet
+        </div>
+
+        <div id="deck-visual"></div>
+
+        <div class="absolute top-4 left-4 hud-box">
+            <div id="bot-reaction" class="bot-reaction">😡</div>
+            <div id="bot-name-hud" class="text-xs text-gray-400 font-bold tracking-widest mb-1 uppercase">Ahmet</div>
+            <div id="bot-score" class="score-text text-red-400">0</div>
+            <div class="text-xs mt-1 bg-black/50 px-2 py-1 rounded">Kasa: <span id="bot-count">0</span></div>
+        </div>
+
+        <div id="bot-turn-indicator" class="absolute top-[130px] md:top-[160px] left-1/2 -translate-x-1/2 z-40 transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div id="bot-turn-text" class="bg-red-900/80 border border-red-500 text-red-300 px-4 py-1 rounded-full text-sm font-bold shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse">
+                🤖 AHMET DÜŞÜNÜYOR...
+            </div>
+        </div>
+
+        <div id="player-turn-indicator" class="absolute bottom-[130px] md:bottom-[160px] left-1/2 -translate-x-1/2 z-40 transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div class="bg-green-900/80 border border-green-500 text-green-300 px-4 py-1 rounded-full text-sm font-bold shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-pulse">
+                🎯 SIRA SENDE
+            </div>
+        </div>
+
+        <div class="absolute bottom-4 right-4 hud-box">
+            <div id="player-hud-name" class="text-xs text-gray-400 font-bold tracking-widest mb-1 uppercase">Sen</div>
+            <div id="player-score" class="score-text text-green-400">0</div>
+            <div class="text-xs mt-1 bg-black/50 px-2 py-1 rounded">Kasa: <span id="player-count">0</span></div>
+        </div>
+
+        <div id="cards-container"></div>
+    </div>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 flex justify-center items-center z-[250] hidden backdrop-blur-md transition-opacity duration-300">
+        <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-sm flex flex-col gap-4 mx-4">
+            <h2 class="text-2xl font-black text-center text-white mb-2 tracking-wider" style="font-family: 'Poppins', sans-serif;">AYARLAR</h2>
+            
+            <div class="w-full bg-black/40 p-4 rounded-xl border border-white/10 mb-2 flex justify-between items-center">
+                <label class="text-sm text-gray-300 font-bold tracking-widest uppercase">Ses Efektleri</label>
+                <button id="sound-toggle-btn" class="text-3xl hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">🔊</button>
+            </div>
+
+            <div class="w-full bg-black/40 p-4 rounded-xl border border-white/10 mb-4">
+                <label class="text-sm text-gray-300 font-bold tracking-widest uppercase mb-2 block text-center">Oyun Hızı</label>
+                <input type="range" id="speed-slider" min="1" max="3" step="1" value="2" class="w-full">
+                <div class="flex justify-between text-xs text-gray-400 mt-2 font-bold">
+                    <span>YAVAŞ</span><span>NORMAL</span><span>HIZLI</span>
+                </div>
+            </div>
+
+            <button id="resume-btn" class="w-full bg-blue-600/90 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-blue-400/30">Oyuna Dön</button>
+            <button onclick="triggerRestartMatch()" class="w-full bg-yellow-600/90 hover:bg-yellow-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-yellow-400/30">Mevcut Maçı Sıfırla</button>
+            <!-- Ana Menüye Dön Butonu Mavi Yapıldı -->
+            <button onclick="location.reload()" class="w-full bg-gray-600/90 hover:bg-gray-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-gray-400/30">Ana Menüye Dön</button>
+            <!-- YENİ: Hesaptan Çık Butonu (Kırmızı) -->
+            <button onclick="logoutUser()" class="w-full bg-red-600/90 hover:bg-red-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-red-400/30 mt-2">Hesaptan Çık</button>
+        </div>
+    </div>
+
+    <!-- Reveal Hidden Cards Modal -->
+    <div id="reveal-modal" class="fixed inset-0 bg-black/80 flex justify-center items-center z-[100] hidden backdrop-blur-sm transition-opacity duration-300">
+        <div class="glass-panel p-6 rounded-2xl text-center max-w-sm w-full mx-4 relative">
+            <button id="reveal-close" class="absolute top-3 right-3 text-gray-400 hover:text-white text-2xl font-bold leading-none">&times;</button>
+            <h3 class="text-xl font-bold text-yellow-400 mb-2">İlk Kartlar Açıldı!</h3>
+            <p class="text-sm text-gray-300 mb-6">Ortada kapalı duran ilk 3 kart bunlardı:</p>
+            <div id="reveal-cards-container" class="flex justify-center gap-2 sm:gap-4 mb-4"></div>
+            <p class="text-xs text-gray-500 mt-4">(Devam etmek için ekrana dokun)</p>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="fixed inset-0 bg-black/90 flex justify-center items-center z-[200] hidden backdrop-blur-md">
+        <div class="glass-panel rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl relative overflow-hidden">
+            <div id="elo-result-badge"></div>
+            <h2 id="modal-title" class="text-3xl font-black text-center text-yellow-400 mb-2 mt-4" style="font-family: 'Poppins', sans-serif;">EL BİTTİ</h2>
+            <div id="winner-text" class="text-lg font-bold text-center mb-4 uppercase"></div>
+            
+            <table class="w-full text-left text-sm text-gray-300 mb-4">
+                <thead>
+                    <tr class="border-b border-gray-600">
+                        <th class="py-2">Puan Detayı</th><th class="text-center">Sen</th><th id="bot-name-score" class="text-center">Ahmet</th>
+                    </tr>
+                </thead>
+                <tbody id="score-details-body"></tbody>
+            </table>
+
+            <div class="flex justify-between items-center bg-black/40 p-3 rounded-lg border border-gray-500 mb-4" id="round-score-box">
+                <span class="font-bold text-gray-300 text-sm">EL PUANI:</span>
+                <div class="flex gap-8">
+                    <span id="final-player" class="text-xl font-black text-green-400">0</span>
+                    <span id="final-bot" class="text-xl font-black text-red-400">0</span>
+                </div>
+            </div>
+            
+            <div id="tournament-score-box" class="flex justify-between items-center bg-black/60 p-3 rounded-lg mb-6 border border-gray-500 shadow-inner hidden">
+                <span class="font-bold text-white text-md">GENEL SKOR:</span>
+                <div class="flex gap-8">
+                    <span id="total-final-player" class="text-2xl font-black text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.5)]">0</span>
+                    <span id="total-final-bot" class="text-2xl font-black text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.5)]">0</span>
+                </div>
+            </div>
+            
+            <button id="next-round-btn" onclick="startNextRound()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all mb-2">SONRAKİ ELE GEÇ</button>
+            <button id="restart-match-btn" onclick="location.reload()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all hidden">ANA MENÜYE DÖN</button>
+        </div>
+    </div>
+
+    <!-- SOCKET.IO KÜTÜPHANESİ -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- OYUN KODLARI -->
+    <script>
+        const socket = io(); 
+        let currentRoomId = null;
+        let acceptTimerInterval = null;
+        let toastTimeout = null;
+        let currentUser = "Oyuncu"; 
+
+        // ==========================================
+        // 1. KULLANICI GİRİŞİ, ÇIKIŞI VE OTURUM SİSTEMİ
+        // ==========================================
+        function finalizeLogin(username) {
+            currentUser = username;
+            sessionStorage.setItem('pisti_username', currentUser); // OTURUMU KAYDET
+            
+            document.getElementById('player-hud-name').innerText = currentUser;
+            document.getElementById('menu-username-display').innerText = currentUser + " |";
+            
+            GameState.elo = parseInt(localStorage.getItem('pistiElo_' + currentUser) || '0');
+            
+            let currentRank = getRankDetails(GameState.elo);
+            document.getElementById('menu-elo').innerText = GameState.elo;
+            document.getElementById('menu-rank-icon').innerText = currentRank.icon;
+            document.getElementById('menu-rank-title').innerText = currentRank.title;
+            document.getElementById('menu-rank-title').className = `text-xs font-black uppercase tracking-wider ${currentRank.color}`;
+            
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('start-screen').style.display = 'flex';
+            showToast("Hoş geldin, " + currentUser + "!", "👋");
+        }
+
+        function loginWithGoogle() {
+            let name = prompt("Google hesabı bağlandı. Lütfen oyunda görünecek adınızı girin (Örn: Ahmet):", "GoogleKullanicisi");
+            if(name && name.trim() !== "") {
+                finalizeLogin(name.trim().substring(0, 12)); 
+            } else {
+                showToast("Giriş iptal edildi.", "⚠️");
+            }
+        }
+
+        function loginAsGuest() {
+            let randomNum = Math.floor(Math.random() * 90000000) + 10000000;
+            let guestName = "Misafir" + randomNum;
+            finalizeLogin(guestName);
+        }
+
+        function logoutUser() {
+            sessionStorage.removeItem('pisti_username'); // OTURUMU SİL
+            location.reload(); // Sayfayı yenile (Giriş ekranına atacak)
+        }
+
+        // ==========================================
+        // 2. TOAST BİLDİRİM FONKSİYONU
+        // ==========================================
+        function showToast(message, icon = 'ℹ️') {
+            const toast = document.getElementById('toast-notification');
+            document.getElementById('toast-message').innerText = message;
+            document.getElementById('toast-icon').innerText = icon;
+            toast.style.top = '20px';
+            toast.classList.remove('opacity-0');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => { toast.style.top = '-100px'; toast.classList.add('opacity-0'); }, 3000);
+        }
+
+        // ==========================================
+        // 3. TEMEL OYUN DURUMU (GAMESTATE)
+        // ==========================================
+        const GameState = {
+            deck: [], centerPile: [], playerHand: [], botHand: [], playerCaptured: [], botCaptured: [], playerPistiPairs: [], botPistiPairs: [],
+            pScore: 0, bScore: 0, turn: 'none', lastCapturer: null, isFirstCapture: true, initialHiddenIds: [], botDifficulty: 'orta',
+            elBaslayici: 'player', speedMultiplier: 1.0, soundEnabled: true, totalPScore: 0, totalBScore: 0, targetScore: 101, gameMode: 'single',
+            elo: 0,
+            calcStandardPoints(stash) { let pts = 0; stash.forEach(id => { let c = allCards.find(x => x.id === id); if(c.rank === 'A' || c.rank === 'J') pts += 1; if(c.rank === '10' && c.suit === '♦') pts += 3; if(c.rank === '2' && c.suit === '♣') pts += 2; }); return pts; }
+        };
+
+        // ==========================================
+        // 4. MULTIPLAYER: EŞLEŞTİRME VE SOKET YÖNETİMİ
+        // ==========================================
+        function findMultiplayerMatch() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('matchmaking-screen').classList.remove('hidden');
+            document.getElementById('matchmaking-title').innerText = "RAKİP ARANIYOR...";
+            if(document.getElementById('search-elo-display')) document.getElementById('search-elo-display').innerText = GameState.elo;
+            
+            socket.emit('findMatch', { elo: GameState.elo, username: currentUser });
+        }
+
+        function cancelMatchmaking() {
+            document.getElementById('matchmaking-screen').classList.add('hidden');
+            document.getElementById('start-screen').style.display = 'flex';
+            socket.emit('cancelMatch');
+        }
+
+        socket.on('matchFound', (data) => {
+            currentRoomId = data.roomId;
+            document.getElementById('matchmaking-screen').classList.add('hidden');
+            document.getElementById('match-accept-screen').classList.remove('hidden');
+            let timeLeft = 15; document.getElementById('accept-timer').innerText = timeLeft;
+            const acceptBtn = document.getElementById('accept-match-btn');
+            acceptBtn.innerText = "MAÇI KABUL ET"; acceptBtn.disabled = false;
+            acceptBtn.classList.remove('opacity-50', 'from-gray-600', 'to-gray-500'); acceptBtn.classList.add('from-green-600', 'to-green-500');
+            clearInterval(acceptTimerInterval);
+            acceptTimerInterval = setInterval(() => { timeLeft--; document.getElementById('accept-timer').innerText = timeLeft; if(timeLeft <= 0) clearInterval(acceptTimerInterval); }, 1000);
+        });
+
+        function acceptMatch() {
+            socket.emit('acceptMatch', currentRoomId);
+            const acceptBtn = document.getElementById('accept-match-btn');
+            acceptBtn.innerText = "DİĞER OYUNCU BEKLENİYOR..."; acceptBtn.disabled = true;
+            acceptBtn.classList.remove('from-green-600', 'to-green-500'); acceptBtn.classList.add('opacity-50', 'from-gray-600', 'to-gray-500');
+        }
+
+        function declineMatch() {
+            socket.emit('declineMatch', currentRoomId);
+            document.getElementById('match-accept-screen').classList.add('hidden');
+            document.getElementById('start-screen').style.display = 'flex';
+        }
+
+        socket.on('matchStarted', (data) => {
+            clearInterval(acceptTimerInterval);
+            document.getElementById('match-accept-screen').classList.add('hidden');
+            document.getElementById('game-board').style.display = 'block';
+            
+            document.getElementById('bot-name-hud').innerText = data.opponentName;
+            document.getElementById('bot-name-score').innerText = data.opponentName;
+            
+            showToast("Maç Başlıyor! Kartlar dağıtılıyor...", "🃏");
+            
+            GameState.gameMode = 'multiplayer';
+            GameState.initialHiddenIds = []; 
+            buildDeck(); 
+        });
+
+        socket.on('gameUpdate', (data) => {
+            if (!allCards || allCards.length === 0) { buildDeck(); }
+
+            if (GameState.initialHiddenIds.length === 0 && data.centerPile.length === 4 && data.myCaptured.length === 0 && data.opponentCaptured.length === 0) {
+                GameState.initialHiddenIds = [data.centerPile[0], data.centerPile[1], data.centerPile[2]];
+            }
+
+            GameState.playerHand = data.myHand;
+            GameState.centerPile = data.centerPile;
+            GameState.playerCaptured = data.myCaptured;
+            GameState.botCaptured = data.opponentCaptured;
+            GameState.pScore = data.pScore;
+            GameState.bScore = data.bScore;
+            GameState.playerPistiPairs = data.myPistiPairs;
+            GameState.botPistiPairs = data.opponentPistiPairs;
+            GameState.deck = Array(data.deckCount).fill('c0'); 
+
+            GameState.botHand = [];
+            let usedIds = [...GameState.playerHand, ...GameState.centerPile, ...GameState.playerCaptured, ...GameState.botCaptured];
+            let tempDeck = allCards.map(c=>c.id).filter(id => !usedIds.includes(id));
+            for(let i=0; i<data.opponentHandCount; i++) { 
+                if(tempDeck.length > 0) GameState.botHand.push(tempDeck.pop()); 
+            }
+
+            allCards.forEach(c => {
+                if (GameState.playerHand.includes(c.id)) {
+                    c.state = 'playerHand'; c.faceUp = true;
+                } else if (GameState.botHand.includes(c.id)) {
+                    c.state = 'botHand'; c.faceUp = false;
+                } else if (GameState.centerPile.includes(c.id)) {
+                    c.state = 'center'; 
+                    c.faceUp = !GameState.initialHiddenIds.includes(c.id);
+                    if(c.rot === 0) c.rot = (Math.random() * 20) - 10; 
+                } else if (GameState.playerCaptured.includes(c.id)) {
+                    c.state = 'pCap'; c.faceUp = false;
+                } else if (GameState.botCaptured.includes(c.id)) {
+                    c.state = 'bCap'; c.faceUp = false;
+                } else {
+                    c.state = 'deck'; c.faceUp = false;
+                }
+            });
+
+            GameState.turn = data.turn === socket.id ? 'player' : 'bot';
+            if(GameState.turn === 'player') {
+                document.getElementById('bot-turn-text').innerText = ""; 
+                if(data.myHand.length > 0) AudioFX.swoosh(); 
+            } else {
+                document.getElementById('bot-turn-text').innerText = "🔄 RAKİP DÜŞÜNÜYOR...";
+            }
+            
+            renderBoard();
+        });
+
+        socket.on('revealFirstCards', (hiddenIds) => {
+            const modal = document.getElementById('reveal-modal'); 
+            const container = document.getElementById('reveal-cards-container'); 
+            const box = modal.querySelector('.glass-panel'); 
+            const closeBtn = document.getElementById('reveal-close'); 
+            container.innerHTML = '';
+            
+            hiddenIds.forEach(id => { 
+                const c = allCards.find(x => x.id === id); 
+                if(c) {
+                    container.innerHTML += `<div class="static-card ${c.isRed ? 'red' : 'black'}"><div class="s-corner top"><span>${c.rank}</span><span class="text-sm -mt-1">${c.suit}</span></div><div class="s-center">${c.suit}</div><div class="s-corner bottom"><span>${c.rank}</span><span class="text-sm -mt-1">${c.suit}</span></div></div>`; 
+                }
+            });
+            
+            modal.classList.remove('hidden');
+            const closeAction = (e) => { 
+                if(e && e.target !== closeBtn && box.contains(e.target)) return;
+                modal.classList.add('hidden'); 
+                modal.removeEventListener('click', closeAction); 
+                closeBtn.removeEventListener('click', closeAction); 
+            }; 
+            modal.addEventListener('click', closeAction); 
+            closeBtn.addEventListener('click', closeAction);
+            
+            setTimeout(() => { closeAction(); }, 4000);
+        });
+
+        socket.on('pistiEvent', (data) => {
+            AudioFX.pisti();
+            let isMe = data.player === socket.id;
+            let color = isMe ? '#4ade80' : '#f87171';
+            showFloatingPisti(window.innerWidth/2, window.innerHeight/2, color, 10);
+            BotReactions.react(isMe ? 'playerPisti' : 'botPisti');
+            fireConfetti();
+        });
+
+        socket.on('gameOver', () => { finishGame(); });
+
+        socket.on('matchFailed', (data) => {
+            clearInterval(acceptTimerInterval);
+            document.getElementById('match-accept-screen').classList.add('hidden');
+            if (data.reason === 'opponent_timeout') {
+                document.getElementById('matchmaking-screen').classList.remove('hidden');
+                document.getElementById('matchmaking-title').innerText = "RAKİP KABUL ETMEDİ ❌";
+                showToast("Rakip maçı reddetti. Yeni oyuncu aranıyor...", "🔄");
+            } else {
+                document.getElementById('start-screen').style.display = 'flex';
+                showToast("Maçı reddettiğiniz için ana menüye döndünüz.", "❌");
+            }
+        });
+
+        socket.on('opponentDisconnected', () => {
+            showToast("Rakip oyundan çıktı! Hükmen galip (+15 ELO)", "🏆");
+            GameState.elo += 15; 
+            localStorage.setItem('pistiElo_' + currentUser, GameState.elo);
+            
+            let newRank = getRankDetails(GameState.elo);
+            document.getElementById('menu-elo').innerText = GameState.elo;
+            document.getElementById('menu-rank-icon').innerText = newRank.icon;
+            document.getElementById('menu-rank-title').innerText = newRank.title;
+            document.getElementById('menu-rank-title').className = `text-xs font-black uppercase tracking-wider ${newRank.color}`;
+
+            setTimeout(() => {
+                location.reload(); // Sıkıntısız ve temiz bir şekilde menüye atar
+            }, 3000);
+        });
+
+        // ==========================================
+        // 5. SES VE TİTREŞİM
+        // ==========================================
+        const AudioFX = {
+            ctx: null, init() { if (!this.ctx && GameState.soundEnabled) { const AudioContext = window.AudioContext || window.webkitAudioContext; if(AudioContext) this.ctx = new AudioContext(); } },
+            playTone(freq, type, duration, vol=0.1) { if(!GameState.soundEnabled || !this.ctx) return; if(this.ctx.state === 'suspended') this.ctx.resume(); const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.type = type; osc.frequency.value = freq; osc.connect(gain); gain.connect(this.ctx.destination); gain.gain.setValueAtTime(vol, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration); osc.start(); osc.stop(this.ctx.currentTime + duration); },
+            swoosh() { this.playTone(150, 'sine', 0.15, 0.05); }, tap() { this.playTone(300, 'square', 0.05, 0.05); }, pisti() { this.playTone(880, 'sine', 0.5, 0.2); setTimeout(() => this.playTone(1108, 'sine', 0.8, 0.2), 100); }
+        };
+        const hapticTap = () => { if(navigator.vibrate && GameState.soundEnabled) navigator.vibrate(50); };
+
+        function getRankDetails(elo) {
+            if(elo < 50) return { title: 'Çaylak', icon: '🥚', color: 'text-gray-300' };
+            if(elo < 150) return { title: 'Kalfa', icon: '🥉', color: 'text-orange-400' };
+            if(elo < 300) return { title: 'Usta', icon: '🥈', color: 'text-gray-300' };
+            if(elo < 600) return { title: 'Şampiyon', icon: '🥇', color: 'text-yellow-400' };
+            if(elo < 1000) return { title: 'Üstad', icon: '💎', color: 'text-cyan-400' };
+            return { title: 'Pişti Efsanesi', icon: '👑', color: 'text-purple-400' };
+        }
+
+        const soundToggleBtn = document.getElementById('sound-toggle-btn');
+        let savedSound = localStorage.getItem('pistiSoundEnabled');
+        if (savedSound !== null) { GameState.soundEnabled = savedSound === 'true'; soundToggleBtn.innerText = GameState.soundEnabled ? '🔊' : '🔇'; }
+        soundToggleBtn.addEventListener('click', () => { GameState.soundEnabled = !GameState.soundEnabled; soundToggleBtn.innerText = GameState.soundEnabled ? '🔊' : '🔇'; localStorage.setItem('pistiSoundEnabled', GameState.soundEnabled); if(GameState.soundEnabled) { AudioFX.init(); AudioFX.tap(); } });
+
+        // ==========================================
+        // 6. ORİJİNAL BOT ZEKASI (SINGLEPLAYER İÇİN)
+        // ==========================================
+        const BotAI = {
+            memory: { seenCards: new Set() }, reset() { this.memory.seenCards.clear(); }, updateMemory(ids) { ids.forEach(id => { let c = allCards.find(x => x.id === id); if (c) this.memory.seenCards.add(c); }); },
+            decidePlay() {
+                let bCards = GameState.botHand.map(id => allCards.find(c => c.id === id)); let topId = GameState.centerPile.length > 0 ? GameState.centerPile[GameState.centerPile.length - 1] : null; let topCard = topId ? allCards.find(c => c.id === topId) : null;
+                if (GameState.botDifficulty === 'kolay') return bCards[Math.floor(Math.random() * bCards.length)].id;
+                if (GameState.botDifficulty === 'orta') {
+                    if (topCard) { let match = bCards.find(c => c.rank === topCard.rank); if(match) return match.id; }
+                    if (topCard && GameState.centerPile.length > 0) { let jack = bCards.find(c => c.rank === 'J'); if(jack && GameState.centerPile.length >= 2) return jack.id; }
+                    let safe = bCards.filter(c => c.rank !== 'J' && c.rank !== 'A' && !(c.rank==='10' && c.suit==='♦') && !(c.rank==='2' && c.suit==='♣'));
+                    if(safe.length > 0) return safe[Math.floor(Math.random() * safe.length)].id; return bCards[0].id; 
+                }
+                if (GameState.botDifficulty === 'zor') {
+                    if (topCard) { let match = bCards.find(c => c.rank === topCard.rank); if(match) return match.id; }
+                    if (topCard) { let jack = bCards.find(c => c.rank === 'J'); let pilePts = GameState.calcStandardPoints(GameState.centerPile); if(jack && (pilePts > 0 || GameState.centerPile.length >= 3 || GameState.deck.length === 0)) return jack.id; }
+                    let seenRanks = {}; ranks.forEach(r => seenRanks[r] = 0); this.memory.seenCards.forEach(c => { seenRanks[c.rank]++; }); bCards.forEach(c => seenRanks[c.rank]++); GameState.centerPile.forEach(id => { let c = allCards.find(x => x.id===id); if(c) seenRanks[c.rank]++; });
+                    let scoredCards = bCards.map(c => {
+                        let remaining = 4 - seenRanks[c.rank]; let risk = remaining * 10; 
+                        if(c.rank === 'J') risk += 100; if(c.rank === 'A') risk += 50; if(c.rank === '10' && c.suit === '♦') risk += 60; if(c.rank === '2' && c.suit === '♣') risk += 40;
+                        return { id: c.id, score: risk };
+                    }); scoredCards.sort((a, b) => a.score - b.score); return scoredCards[0].id;
+                }
+            }
+        };
+
+        const BotReactions = {
+            el: document.getElementById('bot-reaction'),
+            react(type) {
+                if(Math.random() > 0.4) return; const emojis = { botPisti: ['😎', '😈', '🤑', '🔥', '🤪'], playerPisti: ['😡', '🤬', '😭', '💔', '💀'], botBigPile: ['😋', '🥳', '💰', '🤌'], playerBigPile: ['🙄', '😤', '😒', '🤦‍♂️'] };
+                if(!emojis[type]) return; const arr = emojis[type]; this.el.innerText = arr[Math.floor(Math.random() * arr.length)]; this.el.classList.add('show'); setTimeout(() => this.el.classList.remove('show'), 2500);
+            }
+        };
+
+        function showFloatingPisti(x, y, color, points) {
+            const el = document.createElement('div'); el.className = 'floating-pisti-text text-center w-full'; el.style.left = `${x}px`; el.style.top = `${y}px`; el.style.color = color; el.style.textShadow = `0 0 20px ${color}, 0 5px 15px rgba(0,0,0,0.8)`; el.innerText = `PİŞTİ +${points}`;
+            document.body.appendChild(el); setTimeout(() => el.remove(), 2000);
+        }
+
+        // ==========================================
+        // 7. DESTE OLUŞTURMA VE OYUN MANTIĞI
+        // ==========================================
+        const suits = ['♥', '♦', '♣', '♠']; const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']; let allCards = []; const botNames = { kolay: 'Emre', orta: 'Ahmet', zor: 'Yavuz' }; const delay = ms => new Promise(res => setTimeout(res, ms * GameState.speedMultiplier));
+
+        function buildDeck() {
+            const container = document.getElementById('cards-container'); container.innerHTML = ''; let id = 0; allCards = [];
+            for (let s of suits) {
+                for (let r of ranks) {
+                    const isRed = s === '♥' || s === '♦'; const cId = `c${id++}`; const el = document.createElement('div'); el.className = 'playing-card'; el.id = cId;
+                    el.innerHTML = `<div class="card-inner"><div class="card-face card-front ${isRed ? 'red' : 'black'}"><div class="card-corner top"><span>${r}</span><span class="text-lg -mt-1">${s}</span></div><div class="card-center">${s}</div><div class="card-corner bottom"><span>${r}</span><span class="text-lg -mt-1">${s}</span></div></div><div class="card-face card-back"></div></div>`;
+                    let isDragging = false, dragStartX = 0, dragStartY = 0;
+                    el.addEventListener('pointerdown', (e) => {
+                        if(GameState.turn !== 'player' || !GameState.playerHand.includes(cId)) return;
+                        isDragging = true; dragStartX = e.clientX; dragStartY = e.clientY; el.style.transition = 'none'; el.style.zIndex = 300;
+                        const moveHandler = (moveEvent) => { if(!isDragging) return; let dx = moveEvent.clientX - dragStartX; let dy = moveEvent.clientY - dragStartY; el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.05)`; };
+                        const upHandler = async (upEvent) => {
+                            if(!isDragging) return; isDragging = false; window.removeEventListener('pointermove', moveHandler); window.removeEventListener('pointerup', upHandler); el.style.transition = ''; 
+                            let dy = upEvent.clientY - dragStartY; let dx = upEvent.clientX - dragStartX; 
+                            if (dy < -60 || (Math.abs(dy) < 10 && Math.abs(dx) < 10)) { 
+                                hapticTap(); 
+                                if (GameState.gameMode === 'multiplayer') {
+                                    GameState.turn = 'none'; 
+                                    AudioFX.tap();
+                                    socket.emit('playCard', cId); 
+                                } else {
+                                    await handleCardPlay(cId); 
+                                }
+                            } else { renderBoard(); }
+                        }; window.addEventListener('pointermove', moveHandler); window.addEventListener('pointerup', upHandler);
+                    }); container.appendChild(el); allCards.push({ id: cId, suit: s, rank: r, isRed: isRed, el: el, state: 'deck', faceUp: false, rot: 0 });
+                }
+            }
+        }
+
+        function renderBoard() {
+            const w = window.innerWidth; const h = window.innerHeight; const cx = w / 2; const cy = h / 2; const isMob = w < 768; const deckX = isMob ? 30 : 60; const deckY = cy; const pCapX = w + 50; const pCapY = h + 50; const bCapX = -50; const bCapY = -50; 
+            const deckVis = document.getElementById('deck-visual'); deckVis.style.left = `${deckX - (isMob ? 32 : 42)}px`; let deckHeightOffset = Math.floor(GameState.deck.length / 3); deckVis.style.top = `${deckY - (isMob ? 50 : 62) - deckHeightOffset}px`;
+            let shadow = ''; let layers = Math.max(0, Math.floor(GameState.deck.length / 2)); for(let i=1; i<=layers; i++) { let color = i % 2 === 0 ? '#fff' : '#111'; shadow += `-${i}px ${i}px 0 ${color}${i === layers ? '' : ','}`; } deckVis.style.boxShadow = shadow || 'none'; deckVis.style.opacity = GameState.deck.length > 0 ? '1' : '0';
+
+            const pistiCardIds = new Set();
+            GameState.playerPistiPairs.forEach((pair, index) => { pistiCardIds.add(pair.bottom); pistiCardIds.add(pair.top); let xOffset = index * 80; let bCard = allCards.find(c => c.id === pair.bottom); if(bCard) { bCard.state = 'custom'; bCard.targetX = 60 + xOffset; bCard.targetY = h - 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } let tCard = allCards.find(c => c.id === pair.top); if(tCard) { tCard.state = 'custom'; tCard.targetX = 60 + xOffset + 25; tCard.targetY = h - 60 + 10; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } });
+            GameState.botPistiPairs.forEach((pair, index) => { pistiCardIds.add(pair.bottom); pistiCardIds.add(pair.top); let xOffset = index * 80; let bCard = allCards.find(c => c.id === pair.bottom); if(bCard) { bCard.state = 'custom'; bCard.targetX = w - 60 - xOffset; bCard.targetY = 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } let tCard = allCards.find(c => c.id === pair.top); if(tCard) { tCard.state = 'custom'; tCard.targetX = w - 60 - xOffset - 25; tCard.targetY = 60 + 10; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } });
+
+            allCards.forEach(c => {
+                let top, left, zIdx, trans = ''; c.el.classList.toggle('face-up', c.faceUp); c.el.classList.toggle('playable', c.state === 'playerHand' && GameState.turn === 'player');
+                if (c.state === 'custom') { top = c.targetY; left = c.targetX; zIdx = c.targetZ; trans = `translate(-50%, -50%) rotate(${c.rot}deg)`; }
+                else {
+                    switch(c.state) {
+                        case 'deck': top = deckY; left = deckX; zIdx = GameState.deck.indexOf(c.id); trans = `translate(-50%, -50%)`; break;
+                        case 'center': top = cy; left = cx; let pileIndex = GameState.centerPile.indexOf(c.id); zIdx = pileIndex !== -1 ? 100 + pileIndex : 300; trans = `translate(-50%, -50%) rotate(${c.rot}deg)`; break;
+                        case 'playerHand': let pi = GameState.playerHand.indexOf(c.id); let pSpace = isMob ? 40 : 60; let px = cx - ((GameState.playerHand.length - 1) * pSpace) / 2 + (pi * pSpace); top = h - (isMob ? 60 : 80); left = px; zIdx = 200 + pi; trans = `translate(-50%, -50%)`; break;
+                        case 'botHand': let bi = GameState.botHand.indexOf(c.id); let bSpace = isMob ? 40 : 60; let bx = cx - ((GameState.botHand.length - 1) * bSpace) / 2 + (bi * bSpace); top = isMob ? 60 : 80; left = bx; zIdx = 200 + bi; trans = `translate(-50%, -50%)`; break;
+                        case 'pCap': if (pistiCardIds.has(c.id)) break; top = pCapY; left = pCapX; zIdx = 50; trans = `translate(-50%, -50%) scale(0.3)`; break;
+                        case 'bCap': if (pistiCardIds.has(c.id)) break; top = bCapY; left = bCapX; zIdx = 50; trans = `translate(-50%, -50%) scale(0.3)`; break;
+                    }
+                }
+                if(top !== undefined) c.el.style.top = `${top}px`; if(left !== undefined) c.el.style.left = `${left}px`; if(zIdx !== undefined) c.el.style.zIndex = zIdx; if(trans) c.el.style.transform = trans;
+            });
+
+            document.getElementById('player-score').innerText = GameState.pScore + GameState.calcStandardPoints(GameState.playerCaptured); document.getElementById('bot-score').innerText = GameState.bScore + GameState.calcStandardPoints(GameState.botCaptured);
+            document.getElementById('player-count').innerText = GameState.playerCaptured.length; document.getElementById('bot-count').innerText = GameState.botCaptured.length;
+            document.getElementById('bot-turn-indicator').style.opacity = GameState.turn === 'bot' ? '1' : '0'; document.getElementById('player-turn-indicator').style.opacity = GameState.turn === 'player' ? '1' : '0';
+        }
+
+        // ==========================================
+        // 8. ORİJİNAL SINGLEPLAYER BAŞLATMA
+        // ==========================================
+        function initiateGame(mode) { GameState.gameMode = mode; document.getElementById('hud-tournament').style.display = mode === 'tournament' ? 'block' : 'none'; document.getElementById('start-screen').style.display = 'none'; document.getElementById('game-board').style.display = 'block'; buildDeck(); setTimeout(startGame, 100); }
+
+        async function startGame() {
+            AudioFX.init(); let currentBotName = botNames[GameState.botDifficulty]; document.getElementById('bot-name-hud').innerText = currentBotName; document.getElementById('bot-turn-text').innerText = `🤖 ${currentBotName.toUpperCase()} DÜŞÜNÜYOR...`; document.getElementById('bot-name-score').innerText = currentBotName;
+            GameState.deck = allCards.map(c => c.id); for (let i = GameState.deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [GameState.deck[i], GameState.deck[j]] = [GameState.deck[j], GameState.deck[i]]; }
+            BotAI.reset(); renderBoard(); await delay(500);
+            for(let i=0; i<4; i++) { let id = GameState.deck.pop(); let c = allCards.find(x => x.id === id); c.state = 'center'; c.faceUp = (i === 3); c.rot = Math.random() * 20 - 10; GameState.centerPile.push(id); if(i < 3) GameState.initialHiddenIds.push(id); AudioFX.swoosh(); renderBoard(); await delay(150); }
+            GameState.turn = GameState.elBaslayici; await dealHands();
+        }
+
+        async function dealHands() {
+            if(GameState.deck.length === 0) { await finishGame(); return; }
+            let preserveTurn = GameState.turn; GameState.turn = 'none'; renderBoard();
+            for(let i=0; i<4; i++) { let pid = GameState.deck.pop(); let pc = allCards.find(x => x.id === pid); pc.state = 'playerHand'; pc.faceUp = true; GameState.playerHand.push(pid); AudioFX.swoosh(); renderBoard(); await delay(100); let bid = GameState.deck.pop(); let bc = allCards.find(x => x.id === bid); bc.state = 'botHand'; bc.faceUp = false; GameState.botHand.push(bid); AudioFX.swoosh(); renderBoard(); await delay(100); }
+            GameState.turn = preserveTurn; renderBoard(); if(GameState.turn === 'bot') setTimeout(botLogic, 800 * GameState.speedMultiplier);
+        }
+
+        async function handleCardPlay(cId) { GameState.turn = 'none'; renderBoard(); await playCard(cId, 'player'); }
+
+        async function playCard(cId, actor) {
+            AudioFX.tap(); let hand = actor === 'player' ? GameState.playerHand : GameState.botHand; hand.splice(hand.indexOf(cId), 1);
+            let card = allCards.find(c => c.id === cId); card.state = 'center'; card.faceUp = true; card.rot = Math.random() * 30 - 15;
+            let topId = GameState.centerPile.length > 0 ? GameState.centerPile[GameState.centerPile.length - 1] : null; let topCard = topId ? allCards.find(c => c.id === topId) : null;
+            let pileSizeBefore = GameState.centerPile.length; renderBoard(); await delay(800); GameState.centerPile.push(cId); renderBoard();
+            let isCapture = false; let isPisti = false; if (topCard && (card.rank === topCard.rank || card.rank === 'J')) { isCapture = true; if (pileSizeBefore === 1 && card.rank === topCard.rank) isPisti = true; }
+            if (isCapture) { await delay(1200); await processCapture(actor, isPisti, card); }
+            if (GameState.playerHand.length === 0 && GameState.botHand.length === 0) { await delay(400); GameState.turn = actor === 'player' ? 'bot' : 'player'; await dealHands(); } else { if(actor === 'player') { GameState.turn = 'bot'; renderBoard(); setTimeout(botLogic, 800 * GameState.speedMultiplier); } else { GameState.turn = 'player'; renderBoard(); } }
+        }
+
+        function promptRevealModal() {
+            return new Promise(resolve => {
+                const modal = document.getElementById('reveal-modal'); const container = document.getElementById('reveal-cards-container'); const box = modal.querySelector('.glass-panel'); const closeBtn = document.getElementById('reveal-close'); container.innerHTML = '';
+                GameState.initialHiddenIds.forEach(id => { const c = allCards.find(x => x.id === id); container.innerHTML += `<div class="static-card ${c.isRed ? 'red' : 'black'}"><div class="s-corner top"><span>${c.rank}</span><span class="text-sm -mt-1">${c.suit}</span></div><div class="s-center">${c.suit}</div><div class="s-corner bottom"><span>${c.rank}</span><span class="text-sm -mt-1">${c.suit}</span></div></div>`; });
+                BotAI.updateMemory(GameState.initialHiddenIds); modal.classList.remove('hidden');
+                const closeAction = (e) => { if(e && e.target !== closeBtn && box.contains(e.target)) return; modal.classList.add('hidden'); modal.removeEventListener('click', closeAction); closeBtn.removeEventListener('click', closeAction); resolve(); } ; modal.addEventListener('click', closeAction); closeBtn.addEventListener('click', closeAction);
+            });
+        }
+
+        async function processCapture(actor, isPisti, playedCard) {
+            GameState.lastCapturer = actor; BotAI.updateMemory(GameState.centerPile);
+            if (GameState.isFirstCapture) { GameState.isFirstCapture = false; if (actor === 'player') await promptRevealModal(); }
+            if (isPisti) {
+                AudioFX.pisti(); let pts = playedCard.rank === 'J' ? 20 : 10; let color = actor === 'player' ? '#4ade80' : '#f87171'; showFloatingPisti(window.innerWidth/2, window.innerHeight/2, color, pts); BotReactions.react(actor === 'player' ? 'playerPisti' : 'botPisti');
+                if(actor === 'player') { GameState.pScore += pts; GameState.playerPistiPairs.push({ bottom: GameState.centerPile[0], top: playedCard.id }); } else { GameState.bScore += pts; GameState.botPistiPairs.push({ bottom: GameState.centerPile[0], top: playedCard.id }); }
+                showScorePulse(actor === 'player' ? 'player-score' : 'bot-score'); fireConfetti();
+            } else if (GameState.centerPile.length > 5) { BotReactions.react(actor === 'player' ? 'playerBigPile' : 'botBigPile'); }
+            let targetStash = actor === 'player' ? GameState.playerCaptured : GameState.botCaptured; let targetState = actor === 'player' ? 'pCap' : 'bCap'; GameState.centerPile.forEach(id => { let c = allCards.find(x => x.id === id); c.state = targetState; c.faceUp = false; targetStash.push(id); }); GameState.centerPile = []; renderBoard(); await delay(800); 
+        }
+
+        async function botLogic() { if(GameState.botHand.length === 0) return; let chosenId = BotAI.decidePlay(); await playCard(chosenId, 'bot'); }
+        function showScorePulse(id) { let el = document.getElementById(id); el.classList.add('score-pulse'); setTimeout(() => el.classList.remove('score-pulse'), 300); }
+        function getScoreDetails(stash, pistiScore, isMajority) { let details = { pisti: pistiScore, majority: isMajority ? 3 : 0, karo10: 0, sinek2: 0, asJ: 0 }; stash.forEach(id => { let c = allCards.find(x => x.id === id); if(c.rank === 'A' || c.rank === 'J') details.asJ += 1; if(c.rank === '10' && c.suit === '♦') details.karo10 = 3; if(c.rank === '2' && c.suit === '♣') details.sinek2 = 2; }); details.total = details.pisti + details.majority + details.karo10 + details.sinek2 + details.asJ; return details; }
+
+        async function finishGame() {
+            GameState.turn = 'none';
+            if(GameState.centerPile.length > 0 && GameState.lastCapturer) {
+                let stash = GameState.lastCapturer === 'player' ? GameState.playerCaptured : GameState.botCaptured; let state = GameState.lastCapturer === 'player' ? 'pCap' : 'bCap';
+                GameState.centerPile.forEach(id => { let c = allCards.find(x => x.id === id); c.state = state; c.faceUp = false; stash.push(id); }); GameState.centerPile = []; renderBoard(); await delay(800);
+            }
+
+            let pMaj = GameState.playerCaptured.length > GameState.botCaptured.length; let bMaj = GameState.botCaptured.length > GameState.playerCaptured.length;
+            let pDetails = getScoreDetails(GameState.playerCaptured, GameState.pScore, pMaj); let bDetails = getScoreDetails(GameState.botCaptured, GameState.bScore, bMaj);
+
+            GameState.totalPScore += pDetails.total; GameState.totalBScore += bDetails.total;
+
+            const tbody = document.getElementById('score-details-body');
+            tbody.innerHTML = `
+                <tr class="border-b border-gray-700/50"><td class="py-1">Pişti</td><td class="text-center text-green-400 font-bold">${pDetails.pisti}</td><td class="text-center text-red-400 font-bold">${bDetails.pisti}</td></tr>
+                <tr class="border-b border-gray-700/50"><td class="py-1">Kart Çoğunluğu</td><td class="text-center">${pDetails.majority ? '3' : '-'}</td><td class="text-center">${bDetails.majority ? '3' : '-'}</td></tr>
+                <tr class="border-b border-gray-700/50"><td class="py-1">Karo 10 (+3)</td><td class="text-center">${pDetails.karo10 ? '3' : '-'}</td><td class="text-center">${bDetails.karo10 ? '3' : '-'}</td></tr>
+                <tr class="border-b border-gray-700/50"><td class="py-1">Sinek 2 (+2)</td><td class="text-center">${pDetails.sinek2 ? '2' : '-'}</td><td class="text-center">${bDetails.sinek2 ? '2' : '-'}</td></tr>
+                <tr><td class="py-1">As ve Valeler</td><td class="text-center">${pDetails.asJ}</td><td class="text-center">${bDetails.asJ}</td></tr>
+            `;
+
+            document.getElementById('final-player').innerText = pDetails.total; document.getElementById('final-bot').innerText = bDetails.total;
+            
+            let title = document.getElementById('winner-text'); let mainTitle = document.getElementById('modal-title');
+            
+            let isMatchOver = false;
+            if (GameState.gameMode === 'single') {
+                isMatchOver = true;
+                document.getElementById('tournament-score-box').classList.add('hidden');
+                document.getElementById('round-score-box').classList.remove('border-b-0', 'rounded-t-lg'); document.getElementById('round-score-box').classList.add('rounded-lg');
+            } else {
+                document.getElementById('tournament-score-box').classList.remove('hidden'); document.getElementById('round-score-box').classList.remove('rounded-lg'); document.getElementById('round-score-box').classList.add('rounded-t-lg', 'border-b-0');
+                if (GameState.totalPScore >= GameState.targetScore || GameState.totalBScore >= GameState.targetScore) isMatchOver = true;
+            }
+
+            document.getElementById('elo-result-badge').innerHTML = ''; 
+            
+            if (isMatchOver) {
+                let pScoreMatch = GameState.gameMode === 'single' ? pDetails.total : GameState.totalPScore;
+                let bScoreMatch = GameState.gameMode === 'single' ? bDetails.total : GameState.totalBScore;
+                
+                let baseGain = GameState.gameMode === 'single' ? 15 : 35; let baseLoss = GameState.gameMode === 'single' ? 10 : 20; let eloChange = 0;
+
+                mainTitle.innerText = "MAÇ BİTTİ!"; document.getElementById('next-round-btn').classList.add('hidden'); document.getElementById('restart-match-btn').classList.remove('hidden');
+                
+                if(pScoreMatch > bScoreMatch) { title.innerText = "🏆 Maçı Sen Kazandın!"; title.className = "text-xl font-bold mb-4 text-green-400"; fireConfetti(); eloChange = baseGain; } 
+                else if(bScoreMatch > pScoreMatch) { title.innerText = `💀 Rakip Kazandı!`; title.className = "text-xl font-bold mb-4 text-red-500"; eloChange = -baseLoss; } 
+                else { title.innerText = "🤝 Berabere Bitti!"; title.className = "text-xl font-bold mb-4 text-yellow-400"; eloChange = 5; }
+
+                let oldRank = getRankDetails(GameState.elo);
+                GameState.elo += eloChange; if(GameState.elo < 0) GameState.elo = 0; 
+                localStorage.setItem('pistiElo_' + currentUser, GameState.elo);
+                
+                let newRank = getRankDetails(GameState.elo);
+
+                let rankUpMsg = (oldRank.title !== newRank.title && eloChange > 0) ? `<div class="text-[10px] text-yellow-300 mt-1 uppercase animate-pulse">🎉 Yeni Rütbe: ${newRank.title}!</div>` : '';
+                let eloColor = eloChange >= 0 ? 'bg-green-600' : 'bg-red-600'; let eloSign = eloChange >= 0 ? '+' : '';
+
+                document.getElementById('elo-result-badge').innerHTML = `
+                    <div class="absolute top-0 left-0 w-full ${eloColor} text-white font-bold text-center py-1 text-sm tracking-widest shadow-md z-10 flex flex-col items-center">
+                        <span>ELO: ${eloSign}${eloChange} (Güncel: ${GameState.elo} ${newRank.icon})</span>
+                        ${rankUpMsg}
+                    </div>
+                `;
+
+            } else {
+                mainTitle.innerText = "EL BİTTİ"; title.innerText = `İlk 101'e Ulaşan Kazanır!`; title.className = "text-md font-bold mb-4 text-yellow-400";
+                document.getElementById('next-round-btn').classList.remove('hidden'); document.getElementById('restart-match-btn').classList.add('hidden');
+            }
+
+            document.getElementById('game-over-modal').classList.remove('hidden');
+        }
+
+        function startNextRound() { document.getElementById('game-over-modal').classList.add('hidden'); GameState.deck = []; GameState.centerPile = []; GameState.playerHand = []; GameState.botHand = []; GameState.playerCaptured = []; GameState.botCaptured = []; GameState.playerPistiPairs = []; GameState.botPistiPairs = []; GameState.pScore = 0; GameState.bScore = 0; GameState.lastCapturer = null; GameState.isFirstCapture = true; GameState.initialHiddenIds = []; GameState.elBaslayici = GameState.elBaslayici === 'player' ? 'bot' : 'player'; buildDeck(); setTimeout(startGame, 100); }
+
+        const cvs = document.getElementById('confetti-canvas'); const ctx = cvs.getContext('2d'); let particles = []; let cvsW, cvsH; function resizeCvs() { cvsW = cvs.width = window.innerWidth; cvsH = cvs.height = window.innerHeight; } function debounce(func, wait) { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; } window.addEventListener('resize', debounce(() => { resizeCvs(); renderBoard(); }, 200)); resizeCvs();
+        function fireConfetti() { const colors = ['#fde047', '#ef4444', '#3b82f6', '#10b981', '#a855f7']; for(let i=0; i<100; i++) { particles.push({ x: cvsW/2, y: cvsH/2, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 1) * 15, size: Math.random() * 8 + 4, color: colors[Math.floor(Math.random() * colors.length)], rot: Math.random() * 360, rotSpeed: (Math.random() - 0.5) * 10 }); } if(particles.length <= 100) requestAnimationFrame(updateConfetti); }
+        function updateConfetti() { ctx.clearRect(0,0,cvsW,cvsH); for(let i=particles.length-1; i>=0; i--) { let p = particles[i]; p.vy += 0.4; p.x += p.vx; p.y += p.vy; p.rot += p.rotSpeed; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180); ctx.fillStyle = p.color; ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size); ctx.restore(); if(p.y > cvsH) particles.splice(i, 1); } if(particles.length > 0) requestAnimationFrame(updateConfetti); }
+
+        // ==========================================
+        // 9. OYUN YÜKLENDİĞİNDE: OTURUM KONTROLÜ
+        // ==========================================
+        window.onload = () => {
+            // Oturum Kontrolü (Login atlama)
+            let savedUser = sessionStorage.getItem('pisti_username');
+            if (savedUser) {
+                currentUser = savedUser;
+                GameState.elo = parseInt(localStorage.getItem('pistiElo_' + currentUser) || '0');
+                
+                let currentRank = getRankDetails(GameState.elo);
+                document.getElementById('menu-elo').innerText = GameState.elo;
+                document.getElementById('menu-rank-icon').innerText = currentRank.icon;
+                document.getElementById('menu-rank-title').innerText = currentRank.title;
+                document.getElementById('menu-rank-title').className = `text-xs font-black uppercase tracking-wider ${currentRank.color}`;
+                document.getElementById('menu-username-display').innerText = currentUser + " |";
+                document.getElementById('player-hud-name').innerText = currentUser;
+                
+                document.getElementById('login-modal').classList.add('hidden');
+                document.getElementById('start-screen').style.display = 'flex';
+            } else {
+                document.getElementById('login-modal').classList.remove('hidden');
+            }
+
+            let savedDiff = sessionStorage.getItem('botDifficulty');
+            if (savedDiff) { GameState.botDifficulty = savedDiff; document.querySelectorAll('.diff-btn').forEach(b => { b.classList.remove('bg-white/20', 'text-white', 'shadow-md'); b.classList.add('text-gray-400'); if (b.dataset.diff === savedDiff) { b.classList.add('bg-white/20', 'text-white', 'shadow-md'); b.classList.remove('text-gray-400'); } }); }
+            const speedSlider = document.getElementById('speed-slider'); let savedSpeed = sessionStorage.getItem('gameSpeed'); if (savedSpeed) { speedSlider.value = savedSpeed; speedSlider.dispatchEvent(new Event('input')); }
+            
+            // Eğer maç sonunda Ana Menüye Dön dediysek, direkt menüye atsın diye
+            // Artık autoStart mekanizmasına ihtiyacımız yok çünkü location.reload() login sayfasını atlıyor.
+        };
+
+        document.getElementById('speed-slider').addEventListener('input', (e) => { let val = parseInt(e.target.value); if(val === 1) GameState.speedMultiplier = 1.5; else if(val === 2) GameState.speedMultiplier = 1.0; else if(val === 3) GameState.speedMultiplier = 0.5; document.documentElement.style.setProperty('--anim-speed', (0.8 * GameState.speedMultiplier) + 's'); sessionStorage.setItem('gameSpeed', val); });
+        document.querySelectorAll('.diff-btn').forEach(btn => { btn.addEventListener('click', (e) => { document.querySelectorAll('.diff-btn').forEach(b => { b.classList.remove('bg-white/20', 'text-white', 'shadow-md'); b.classList.add('text-gray-400'); }); e.target.classList.add('bg-white/20', 'text-white', 'shadow-md'); e.target.classList.remove('text-gray-400'); GameState.botDifficulty = e.target.dataset.diff; sessionStorage.setItem('botDifficulty', GameState.botDifficulty); }); });
+        
+        const settingsModal = document.getElementById('settings-modal'); document.getElementById('settings-btn').addEventListener('click', () => settingsModal.classList.remove('hidden')); document.getElementById('resume-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
+    </script>
+</body>
+</html>
