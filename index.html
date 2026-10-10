@@ -763,13 +763,18 @@
                 let pScoreMatch = GameState.gameMode === 'single' ? pDetails.total : GameState.totalPScore;
                 let bScoreMatch = GameState.gameMode === 'single' ? bDetails.total : GameState.totalBScore;
                 
-                let baseGain = GameState.gameMode === 'single' ? 15 : 35; let baseLoss = GameState.gameMode === 'single' ? 10 : 20; let eloChange = 0;
+                let baseGain = 35; let baseLoss = 20; let eloChange = 0;
 
                 mainTitle.innerText = "MAÇ BİTTİ!"; document.getElementById('next-round-btn').classList.add('hidden'); document.getElementById('restart-match-btn').classList.remove('hidden');
                 
                 if(pScoreMatch > bScoreMatch) { title.innerText = "🏆 Maçı Sen Kazandın!"; title.className = "text-xl font-bold mb-4 text-green-400"; fireConfetti(); eloChange = baseGain; } 
                 else if(bScoreMatch > pScoreMatch) { title.innerText = `💀 Rakip Kazandı!`; title.className = "text-xl font-bold mb-4 text-red-500"; eloChange = -baseLoss; } 
                 else { title.innerText = "🤝 Berabere Bitti!"; title.className = "text-xl font-bold mb-4 text-yellow-400"; eloChange = 5; }
+
+                // 1. SORUNUN ÇÖZÜMÜ: Eğer mod offline (single) ise elo değişimini SIFIRLA!
+                if (GameState.gameMode === 'single') {
+                    eloChange = 0;
+                }
 
                 let oldRank = getRankDetails(GameState.elo);
                 GameState.elo += eloChange; if(GameState.elo < 0) GameState.elo = 0; 
