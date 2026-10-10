@@ -32,7 +32,7 @@
         .floating-card-bg { position: absolute; width: 100px; height: 145px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; pointer-events: none; animation: float 10s infinite linear; }
         @keyframes float { 0% { transform: translateY(100vh) rotate(0deg); opacity: 0; } 10% { opacity: 0.5; } 90% { opacity: 0.5; } 100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; } }
 
-        .playing-card { position: absolute; width: var(--card-w); height: var(--card-h); transition: top var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), left var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), transform var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: center center; top: -200px; left: 50%; touch-action: none; }
+        .playing-card { position: absolute; width: var(--card-w); height: var(--card-h); transition: top var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), left var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), transform var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: center center; top: -200px; left: 50%; touch-action: none; will-change: top, left, transform; transform: translateZ(0); }
         .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.5s; transform-style: preserve-3d; border-radius: 8px; box-shadow: 0 8px 18px rgba(0,0,0,0.6); }
         .playing-card.playable .card-inner:hover { transform: translateY(-15px) scale(1.05); box-shadow: 0 20px 30px rgba(0,0,0,0.8); cursor: pointer; }
         .playing-card.face-up .card-inner { transform: rotateY(180deg); }
