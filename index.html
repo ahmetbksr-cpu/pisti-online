@@ -100,6 +100,12 @@
             <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
         </button>
 
+        <!-- YENİ: Liderlik Tablosu Butonu (Sağ Alt) -->
+        <button onclick="liderlikTablosunuAc()" class="absolute bottom-6 right-6 z-[320] bg-yellow-600/80 hover:bg-yellow-500 backdrop-blur-md border border-yellow-400/50 text-white p-3 md:p-4 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)] transition-all hover:scale-110 active:scale-95 flex items-center gap-2 group">
+            <span class="text-2xl md:text-3xl">🏆</span>
+            <span class="hidden group-hover:inline-block font-bold text-sm md:text-base mr-2">SKORLAR</span>
+        </button>
+
         <!-- PROFİL/RÜTBE KUTUSU -->
         <div class="absolute top-3 md:top-6 left-3 md:left-auto flex items-center justify-center bg-black/70 backdrop-blur-md border border-white/10 px-3 md:px-5 py-1.5 md:py-2 rounded-2xl shadow-xl z-[310]">
             <div id="menu-rank-icon" class="text-xl md:text-3xl mr-2 md:mr-3 filter drop-shadow-md">🥚</div>
@@ -153,6 +159,20 @@
         </div>
     </div>
     
+    <!-- Liderlik Tablosu Modalı -->
+    <div id="leaderboard-modal" class="fixed inset-0 bg-black/80 flex justify-center items-center z-[600] hidden backdrop-blur-md transition-opacity duration-300">
+        <div class="glass-panel p-6 md:p-8 rounded-3xl w-11/12 max-w-sm flex flex-col gap-3 md:gap-4 mx-4 relative">
+            <button onclick="liderlikKapat()" class="absolute top-3 right-4 text-gray-400 hover:text-white text-2xl font-bold leading-none">&times;</button>
+            <h2 class="text-2xl font-black text-center text-yellow-400 mb-2 tracking-wider" style="font-family: 'Poppins', sans-serif;">🏆 İLK 3 EFSANE 🏆</h2>
+            
+            <div id="leaderboard-content" class="flex flex-col gap-2 min-h-[150px] justify-center">
+                <div class="text-center text-gray-400 text-sm animate-pulse">Yükleniyor...</div>
+            </div>
+
+            <button onclick="liderlikKapat()" class="w-full bg-gray-600/90 hover:bg-gray-500 text-white font-bold py-2.5 md:py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-gray-400/30 text-sm md:text-base mt-2">Kapat</button>
+        </div>
+    </div>
+
     <!-- Eşleştirme Bekleme Ekranı -->
     <div id="matchmaking-screen" class="fixed inset-0 bg-black/90 flex flex-col justify-center items-center z-[400] hidden backdrop-blur-md">
         <div class="glass-panel p-6 md:p-8 rounded-3xl w-11/12 max-w-sm flex flex-col items-center gap-4 text-center">
@@ -181,7 +201,8 @@
             <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
         </button>
         
-        <div id="hud-tournament" class="absolute top-4 right-16 md:right-20 z-[60] bg-black/40 backdrop-blur-md border border-white/20 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-xl shadow-lg font-bold text-xs md:text-sm hidden md:block">
+        <!-- YENİ: Hedef 101 kısmı tamamen gizlendi (hidden eklendi) -->
+        <div id="hud-tournament" class="absolute top-4 right-16 md:right-20 z-[60] bg-black/40 backdrop-blur-md border border-white/20 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-xl shadow-lg font-bold text-xs md:text-sm hidden">
             Hedef 101: Sen <span id="hud-total-player" class="text-green-400">0</span> - <span id="hud-total-bot" class="text-red-400">0</span> Ahmet
         </div>
 
@@ -217,7 +238,7 @@
 
     <canvas id="confetti-canvas"></canvas>
 
-    <!-- Settings Modal (Z-index 600 yapılarak her şeyin üstüne çıkarıldı) -->
+    <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/80 flex justify-center items-center z-[600] hidden backdrop-blur-md transition-opacity duration-300">
         <div class="glass-panel p-6 md:p-8 rounded-3xl w-11/12 max-w-sm flex flex-col gap-3 md:gap-4 mx-4">
             <h2 class="text-xl md:text-2xl font-black text-center text-white mb-1 md:mb-2 tracking-wider" style="font-family: 'Poppins', sans-serif;">AYARLAR</h2>
@@ -270,7 +291,7 @@
             </table>
 
             <div class="flex justify-between items-center bg-black/40 p-2 md:p-3 rounded-lg border border-gray-500 mb-3 md:mb-4" id="round-score-box">
-                <span class="font-bold text-gray-300 text-xs md:text-sm">EL PUANI:</span>
+                <span class="font-bold text-gray-300 text-xs md:text-sm">SKOR:</span>
                 <div class="flex gap-6 md:gap-8">
                     <span id="final-player" class="text-lg md:text-xl font-black text-green-400">0</span>
                     <span id="final-bot" class="text-lg md:text-xl font-black text-red-400">0</span>
@@ -310,7 +331,8 @@
             document.getElementById('matchmaking-screen').classList.add('hidden');
             document.getElementById('match-accept-screen').classList.add('hidden');
             document.getElementById('game-over-modal').classList.add('hidden');
-            ayarlariKapat(); // Ayarlar açıksa onu da temizle
+            ayarlariKapat();
+            liderlikKapat();
             document.getElementById('start-screen').style.display = 'flex';
         }
 
@@ -321,14 +343,14 @@
             document.getElementById('matchmaking-screen').classList.add('hidden');
             document.getElementById('match-accept-screen').classList.add('hidden');
             document.getElementById('game-over-modal').classList.add('hidden');
-            ayarlariKapat(); // Ayarlar açıksa onu da temizle
+            ayarlariKapat(); 
             document.getElementById('login-modal').classList.remove('hidden');
         }
 
         function ayarlariMenudenAc() {
             document.getElementById('modal-restart-btn').style.display = 'none';
             document.getElementById('modal-menu-btn').style.display = 'none';
-            document.getElementById('main-menu-box').style.display = 'none'; // Menü kutusunu gizle
+            document.getElementById('main-menu-box').style.display = 'none'; 
             document.getElementById('settings-modal').classList.remove('hidden');
         }
 
@@ -340,19 +362,80 @@
 
         function ayarlariKapat() {
             document.getElementById('settings-modal').classList.add('hidden');
-            // Eğer menü ekranındaysak, gizlediğimiz kutuyu geri getir
             if (document.getElementById('start-screen').style.display !== 'none') {
                 document.getElementById('main-menu-box').style.display = 'flex';
             }
         }
 
-        // Ayarlar modülünün DIŞINA (siyah alana) tıklayınca kapatma özelliği
         document.getElementById('settings-modal').addEventListener('click', function(e) {
-            // Eğer tam olarak arka plan (settings-modal div'i) tıklandıysa
-            if (e.target === this) {
-                ayarlariKapat();
-            }
+            if (e.target === this) ayarlariKapat();
         });
+
+        // YENİ: Liderlik Tablosu Fonksiyonları
+        function liderlikTablosunuAc() {
+            document.getElementById('main-menu-box').style.display = 'none'; 
+            document.getElementById('leaderboard-modal').classList.remove('hidden');
+            const liste = document.getElementById('leaderboard-content');
+            liste.innerHTML = '<div class="text-center text-gray-400 text-sm animate-pulse">Yükleniyor...</div>';
+            
+            if (typeof db !== 'undefined') {
+                // Firebase'den ELO'su en yüksek ilk 3 oyuncuyu çek
+                db.collection("oyuncular").orderBy("elo", "desc").limit(3).get()
+                .then((querySnapshot) => {
+                    liste.innerHTML = '';
+                    if (querySnapshot.empty) {
+                        liste.innerHTML = '<div class="text-center text-gray-500">Henüz kimse giriş yapmadı.</div>';
+                        return;
+                    }
+                    
+                    let sirasi = 1;
+                    const madalyalar = ['🥇', '🥈', '🥉'];
+                    const renkler = ['bg-yellow-600/30 border-yellow-400', 'bg-gray-400/20 border-gray-300', 'bg-orange-700/30 border-orange-500'];
+                    
+                    querySnapshot.forEach((doc) => {
+                        let data = doc.data();
+                        let oyuncuAdi = data.isim || "İsimsiz";
+                        let oyuncuElo = data.elo || 0;
+                        let rütbeAdi = getRankDetails(oyuncuElo).title;
+                        
+                        let rankBox = `
+                        <div class="flex items-center justify-between p-3 rounded-xl border ${renkler[sirasi-1]} mb-2 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl drop-shadow-md">${madalyalar[sirasi-1]}</span>
+                                <div class="flex flex-col">
+                                    <span class="text-white font-bold uppercase text-sm md:text-base">${oyuncuAdi}</span>
+                                    <span class="text-gray-400 text-[10px] md:text-xs">${rütbeAdi}</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-yellow-400 font-black text-xl drop-shadow-md">${oyuncuElo}</span>
+                                <span class="text-[8px] text-gray-500 block -mt-1">ELO</span>
+                            </div>
+                        </div>`;
+                        liste.innerHTML += rankBox;
+                        sirasi++;
+                    });
+                })
+                .catch((error) => {
+                    console.log("Skor tablosu hatası: ", error);
+                    liste.innerHTML = '<div class="text-center text-red-500 text-xs">Tablo yüklenemedi. Lütfen tekrar deneyin.</div>';
+                });
+            } else {
+                liste.innerHTML = '<div class="text-center text-red-500 text-xs">Veritabanı bağlantısı yok.</div>';
+            }
+        }
+
+        function liderlikKapat() {
+            document.getElementById('leaderboard-modal').classList.add('hidden');
+            if (document.getElementById('start-screen').style.display !== 'none') {
+                document.getElementById('main-menu-box').style.display = 'flex';
+            }
+        }
+        
+        document.getElementById('leaderboard-modal').addEventListener('click', function(e) {
+            if (e.target === this) liderlikKapat();
+        });
+
 
         function triggerRestartMatch() {
             if (GameState.gameMode !== 'single') {
@@ -590,7 +673,6 @@
             showToast("Rakip oyundan çıktı! Hükmen galip (+15 ELO)", "🏆");
             GameState.elo += 15; 
             
-            // 1. SORUNUN ÇÖZÜMÜ: Rakip çıkınca da puanı Firebase'e (Buluta) kaydet!
             if (typeof currentUserId !== 'undefined' && currentUserId !== null) {
                 db.collection("oyuncular").doc(currentUserId).set({
                     isim: currentUser,
@@ -598,22 +680,19 @@
                 }, { merge: true });
             }
             
-            // Menüdeki rütbe ve yazıları güncelle
             let newRank = getRankDetails(GameState.elo);
             document.getElementById('menu-elo').innerText = GameState.elo;
             document.getElementById('menu-rank-icon').innerText = newRank.icon;
             document.getElementById('menu-rank-title').innerText = newRank.title;
             document.getElementById('menu-rank-title').className = `text-[10px] md:text-xs font-black uppercase tracking-wider ${newRank.color}`;
 
-            // 2. SORUNUN ÇÖZÜMÜ: Oyun tahtasını sıfırlayıp pürüzsüzce menüye dön
             setTimeout(() => {
-                // Arka planda donup kalmaması için kartları ve masayı temizliyoruz
                 GameState.deck = []; GameState.centerPile = []; GameState.playerHand = []; GameState.botHand = []; 
                 document.getElementById('cards-container').innerHTML = '';
                 document.getElementById('deck-visual').style.opacity = '0';
                 
                 temizceAnaMenuyeDon(); 
-            }, 2500); // 3 saniye yerine 2.5 saniyede hızlıca menüye atar
+            }, 2500); 
         });
 
         // ==========================================
@@ -829,7 +908,6 @@
             
             let title = document.getElementById('winner-text'); let mainTitle = document.getElementById('modal-title');
             
-            // YENİ: Artık 101 beklemiyoruz, 52 kart bitince maç kesin biter!
             document.getElementById('tournament-score-box').classList.add('hidden');
             document.getElementById('round-score-box').classList.remove('border-b-0', 'rounded-t-lg'); 
             document.getElementById('round-score-box').classList.add('rounded-lg');
@@ -902,7 +980,7 @@
         // ==========================================
         window.onload = () => {
             let savedUser = sessionStorage.getItem('pisti_username');
-            let savedUid = sessionStorage.getItem('pisti_uid'); // YENİ
+            let savedUid = sessionStorage.getItem('pisti_uid'); 
             
             if (savedUser && savedUid) {
                 currentUser = savedUser;
@@ -941,7 +1019,6 @@
 <!-- FIREBASE KODLARI -->
     <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
-    <!-- YENİ: Firestore (Veritabanı) Kütüphanesi -->
     <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
 
     <script>
@@ -958,28 +1035,31 @@
       firebase.initializeApp(firebaseConfig);
       const auth = firebase.auth();
       const provider = new firebase.auth.GoogleAuthProvider();
-      const db = firebase.firestore(); // YENİ: Veritabanı bağlantısı
-      let currentUserId = null; // YENİ: Oyuncunun gizli Google ID'sini tutacağız
+      const db = firebase.firestore(); 
+      let currentUserId = null; 
 
       function googleIleGirisYap() {
           auth.signInWithPopup(provider).then((result) => {
               const user = result.user;
               
               currentUser = user.displayName;
-              currentUserId = user.uid; // Her oyuncuya özel Google ID
+              currentUserId = user.uid; 
               
               sessionStorage.setItem('pisti_username', currentUser);
               sessionStorage.setItem('pisti_uid', currentUserId);
               
-              // YENİ: ELO'YU ARTIK HAFIZADAN DEĞİL, BULUT VERİTABANINDAN ÇEKİYORUZ
               db.collection("oyuncular").doc(currentUserId).get().then((doc) => {
                   if (doc.exists) {
                       GameState.elo = doc.data().elo || 0;
                   } else {
-                      GameState.elo = 0; // İlk defa giriyorsa ELO'su 0'dır
+                      GameState.elo = 0; 
+                      // İlk defa giren kişiyi sıfır puanla anında listeye (veritabanına) ekle
+                      db.collection("oyuncular").doc(currentUserId).set({
+                          isim: currentUser,
+                          elo: 0
+                      });
                   }
 
-                  // Ekranı güncelle
                   let currentRank = getRankDetails(GameState.elo);
                   document.getElementById('menu-elo').innerText = GameState.elo;
                   document.getElementById('menu-rank-icon').innerText = currentRank.icon;
