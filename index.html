@@ -226,9 +226,7 @@
 
             <button id="resume-btn" class="w-full bg-blue-600/90 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-blue-400/30">Oyuna Dön</button>
             <button onclick="triggerRestartMatch()" class="w-full bg-yellow-600/90 hover:bg-yellow-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-yellow-400/30">Mevcut Maçı Sıfırla</button>
-            <!-- Ana Menüye Dön Butonu Mavi Yapıldı -->
-            <button onclick="location.reload()" class="w-full bg-gray-600/90 hover:bg-gray-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-gray-400/30">Ana Menüye Dön</button>
-            <!-- YENİ: Hesaptan Çık Butonu (Kırmızı) -->
+            <button onclick="temizceAnaMenuyeDon()" class="w-full bg-gray-600/90 hover:bg-gray-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-gray-400/30">Ana Menüye Dön</button>
             <button onclick="logoutUser()" class="w-full bg-red-600/90 hover:bg-red-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-red-400/30 mt-2">Hesaptan Çık</button>
         </div>
     </div>
@@ -277,14 +275,14 @@
             </div>
             
             <button id="next-round-btn" onclick="startNextRound()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all mb-2">SONRAKİ ELE GEÇ</button>
-            <button id="restart-match-btn" onclick="location.reload()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all hidden">ANA MENÜYE DÖN</button>
+            <button id="restart-match-btn" onclick="temizceAnaMenuyeDon()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all hidden">ANA MENÜYE DÖN</button>
         </div>
     </div>
 
     <!-- SOCKET.IO KÜTÜPHANESİ -->
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-    <!-- OYUN KODLARI -->
+    <!-- OYUN KODLARI VE MANTIK -->
     <script>
         const socket = io("https://pisti-online.onrender.com");
         let currentRoomId = null;
@@ -293,11 +291,35 @@
         let currentUser = "Oyuncu"; 
 
         // ==========================================
+        // YENİ: EKRAN YÖNETİMİ (Location.reload YERİNE)
+        // ==========================================
+        function temizceAnaMenuyeDon() {
+            let gameScreen = document.getElementById('game-board');
+            if (gameScreen) gameScreen.style.display = 'none';
+            document.getElementById('matchmaking-screen').classList.add('hidden');
+            document.getElementById('match-accept-screen').classList.add('hidden');
+            document.getElementById('game-over-modal').classList.add('hidden');
+            document.getElementById('settings-modal').classList.add('hidden');
+            document.getElementById('start-screen').style.display = 'flex';
+        }
+
+        function girisEkraninaDon() {
+            document.getElementById('start-screen').style.display = 'none';
+            let gameScreen = document.getElementById('game-board');
+            if (gameScreen) gameScreen.style.display = 'none';
+            document.getElementById('matchmaking-screen').classList.add('hidden');
+            document.getElementById('match-accept-screen').classList.add('hidden');
+            document.getElementById('game-over-modal').classList.add('hidden');
+            document.getElementById('settings-modal').classList.add('hidden');
+            document.getElementById('login-modal').classList.remove('hidden');
+        }
+
+        // ==========================================
         // 1. KULLANICI GİRİŞİ, ÇIKIŞI VE OTURUM SİSTEMİ
         // ==========================================
         function finalizeLogin(username) {
             currentUser = username;
-            sessionStorage.setItem('pisti_username', currentUser); // OTURUMU KAYDET
+            sessionStorage.setItem('pisti_username', currentUser); 
             
             document.getElementById('player-hud-name').innerText = currentUser;
             document.getElementById('menu-username-display').innerText = currentUser + " |";
@@ -315,15 +337,6 @@
             showToast("Hoş geldin, " + currentUser + "!", "👋");
         }
 
-        function loginWithGoogle() {
-            let name = prompt("Google hesabı bağlandı. Lütfen oyunda görünecek adınızı girin (Örn: Ahmet):", "GoogleKullanicisi");
-            if(name && name.trim() !== "") {
-                finalizeLogin(name.trim().substring(0, 12)); 
-            } else {
-                showToast("Giriş iptal edildi.", "⚠️");
-            }
-        }
-
         function loginAsGuest() {
             let randomNum = Math.floor(Math.random() * 90000000) + 10000000;
             let guestName = "Misafir" + randomNum;
@@ -331,8 +344,8 @@
         }
 
         function logoutUser() {
-            sessionStorage.removeItem('pisti_username'); // OTURUMU SİL
-            location.reload(); // Sayfayı yenile (Giriş ekranına atacak)
+            sessionStorage.removeItem('pisti_username');
+            girisEkraninaDon(); 
         }
 
         // ==========================================
@@ -533,7 +546,7 @@
             document.getElementById('menu-rank-title').className = `text-xs font-black uppercase tracking-wider ${newRank.color}`;
 
             setTimeout(() => {
-                location.reload(); // Sıkıntısız ve temiz bir şekilde menüye atar
+                temizceAnaMenuyeDon(); 
             }, 3000);
         });
 
@@ -785,12 +798,14 @@
                 let rankUpMsg = (oldRank.title !== newRank.title && eloChange > 0) ? `<div class="text-[10px] text-yellow-300 mt-1 uppercase animate-pulse">🎉 Yeni Rütbe: ${newRank.title}!</div>` : '';
                 let eloColor = eloChange >= 0 ? 'bg-green-600' : 'bg-red-600'; let eloSign = eloChange >= 0 ? '+' : '';
 
-                document.getElementById('elo-result-badge').innerHTML = `
-                    <div class="absolute top-0 left-0 w-full ${eloColor} text-white font-bold text-center py-1 text-sm tracking-widest shadow-md z-10 flex flex-col items-center">
-                        <span>ELO: ${eloSign}${eloChange} (Güncel: ${GameState.elo} ${newRank.icon})</span>
-                        ${rankUpMsg}
-                    </div>
-                `;
+                if (GameState.gameMode !== 'single') {
+                    document.getElementById('elo-result-badge').innerHTML = `
+                        <div class="absolute top-0 left-0 w-full ${eloColor} text-white font-bold text-center py-1 text-sm tracking-widest shadow-md z-10 flex flex-col items-center">
+                            <span>ELO: ${eloSign}${eloChange} (Güncel: ${GameState.elo} ${newRank.icon})</span>
+                            ${rankUpMsg}
+                        </div>
+                    `;
+                }
 
             } else {
                 mainTitle.innerText = "EL BİTTİ"; title.innerText = `İlk 101'e Ulaşan Kazanır!`; title.className = "text-md font-bold mb-4 text-yellow-400";
@@ -810,7 +825,6 @@
         // 9. OYUN YÜKLENDİĞİNDE: OTURUM KONTROLÜ
         // ==========================================
         window.onload = () => {
-            // Oturum Kontrolü (Login atlama)
             let savedUser = sessionStorage.getItem('pisti_username');
             if (savedUser) {
                 currentUser = savedUser;
@@ -833,9 +847,6 @@
             let savedDiff = sessionStorage.getItem('botDifficulty');
             if (savedDiff) { GameState.botDifficulty = savedDiff; document.querySelectorAll('.diff-btn').forEach(b => { b.classList.remove('bg-white/20', 'text-white', 'shadow-md'); b.classList.add('text-gray-400'); if (b.dataset.diff === savedDiff) { b.classList.add('bg-white/20', 'text-white', 'shadow-md'); b.classList.remove('text-gray-400'); } }); }
             const speedSlider = document.getElementById('speed-slider'); let savedSpeed = sessionStorage.getItem('gameSpeed'); if (savedSpeed) { speedSlider.value = savedSpeed; speedSlider.dispatchEvent(new Event('input')); }
-            
-            // Eğer maç sonunda Ana Menüye Dön dediysek, direkt menüye atsın diye
-            // Artık autoStart mekanizmasına ihtiyacımız yok çünkü location.reload() login sayfasını atlıyor.
         };
 
         document.getElementById('speed-slider').addEventListener('input', (e) => { let val = parseInt(e.target.value); if(val === 1) GameState.speedMultiplier = 1.5; else if(val === 2) GameState.speedMultiplier = 1.0; else if(val === 3) GameState.speedMultiplier = 0.5; document.documentElement.style.setProperty('--anim-speed', (0.8 * GameState.speedMultiplier) + 's'); sessionStorage.setItem('gameSpeed', val); });
@@ -843,9 +854,10 @@
         
         const settingsModal = document.getElementById('settings-modal'); document.getElementById('settings-btn').addEventListener('click', () => settingsModal.classList.remove('hidden')); document.getElementById('resume-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
     </script>
-<!-- 1. BURAYA YAPIŞTIRIN: Firebase Kodları -->
-	<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
+
+    <!-- FIREBASE KODLARI (SADECE BİR KEZ YÜKLENİYOR) -->
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
 
     <script>
       const firebaseConfig = {
@@ -862,30 +874,37 @@
       const provider = new firebase.auth.GoogleAuthProvider();
 
       function googleIleGirisYap() {
-        auth.signInWithPopup(provider).then((result) => {
-            const user = result.user;
-            console.log("Giriş Başarılı:", user.displayName);
-// Giriş ekranını gizle ve ana menüyü göster
-        document.getElementById('login-modal').style.display = 'none'; 
-        document.getElementById('start-screen').style.display = 'flex';        
-        // Google'dan gelen oyuncu adını menüdeki yerine yazdır
-        document.getElementById('menu-username-display').innerText = user.displayName;
-            if (typeof socket !== 'undefined') {
-                socket.emit('playerLogin', { name: user.displayName, photo: user.photoURL });
-            }
-        }).catch((error) => {
-            alert("Giriş başarısız: " + error.message);
-        });
+          auth.signInWithPopup(provider).then((result) => {
+              const user = result.user;
+              console.log("Giriş Başarılı:", user.displayName);
+              
+              // 1. Oyuncu adını sisteme tanıt
+              currentUser = user.displayName;
+              sessionStorage.setItem('pisti_username', currentUser);
+              
+              // 2. Bu oyuncunun eski ELO'sunu hafızadan çek (Yoksa 0 yap)
+              GameState.elo = parseInt(localStorage.getItem('pistiElo_' + currentUser) || '0');
+              
+              // 3. Menüdeki yazıları güncelle
+              let currentRank = getRankDetails(GameState.elo);
+              document.getElementById('menu-elo').innerText = GameState.elo;
+              document.getElementById('menu-rank-icon').innerText = currentRank.icon;
+              document.getElementById('menu-rank-title').innerText = currentRank.title;
+              document.getElementById('menu-rank-title').className = `text-xs font-black uppercase tracking-wider ${currentRank.color}`;
+              document.getElementById('menu-username-display').innerText = currentUser + " |";
+              document.getElementById('player-hud-name').innerText = currentUser;
+
+              // 4. Ekranları değiştir
+              document.getElementById('login-modal').classList.add('hidden');
+              document.getElementById('start-screen').style.display = 'flex'; 
+              
+              if (typeof socket !== 'undefined') {
+                  socket.emit('playerLogin', { name: user.displayName, photo: user.photoURL });
+              }
+          }).catch((error) => {
+              alert("Giriş başarısız: " + error.message);
+          });
       }
-    </script>
-    <!-- Firebase Kodlarının Sonu -->
-
-
-    <!-- 2. SİZİN MEVCUT OYUN KODLARINIZ BURADA KALACAK -->
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io("https://pisti-online.onrender.com");
-        // ... (Kendi yazdığınız diğer oyun kodları) ...
     </script>
 </body>
 </html>
