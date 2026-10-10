@@ -860,8 +860,11 @@
         auth.signInWithPopup(provider).then((result) => {
             const user = result.user;
             console.log("Giriş Başarılı:", user.displayName);
-            document.getElementById('login-modal').style.display = 'none'; 
-            document.getElementById('game-screen').style.display = 'block'; 
+// Giriş ekranını gizle ve ana menüyü göster
+        document.getElementById('login-modal').style.display = 'none'; 
+        document.getElementById('start-screen').style.display = 'flex';        
+        // Google'dan gelen oyuncu adını menüdeki yerine yazdır
+        document.getElementById('menu-username-display').innerText = user.displayName;
             if (typeof socket !== 'undefined') {
                 socket.emit('playerLogin', { name: user.displayName, photo: user.photoURL });
             }
