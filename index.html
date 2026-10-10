@@ -842,7 +842,13 @@
 
                 let oldRank = getRankDetails(GameState.elo);
                 GameState.elo += eloChange; if(GameState.elo < 0) GameState.elo = 0; 
-                localStorage.setItem('pistiElo_' + currentUser, GameState.elo);
+                // YENİ: ELO'yu Bulut Veritabanına Kaydet!
+                if (typeof currentUserId !== 'undefined' && currentUserId !== null) {
+                    db.collection("oyuncular").doc(currentUserId).set({
+                        isim: currentUser,
+                        elo: GameState.elo
+                    }, { merge: true });
+                }
                 
                 let newRank = getRankDetails(GameState.elo);
 
@@ -877,20 +883,28 @@
         // ==========================================
         window.onload = () => {
             let savedUser = sessionStorage.getItem('pisti_username');
-            if (savedUser) {
+            let savedUid = sessionStorage.getItem('pisti_uid'); // YENİ
+            
+            if (savedUser && savedUid) {
                 currentUser = savedUser;
-                GameState.elo = parseInt(localStorage.getItem('pistiElo_' + currentUser) || '0');
+                currentUserId = savedUid;
                 
-                let currentRank = getRankDetails(GameState.elo);
-                document.getElementById('menu-elo').innerText = GameState.elo;
-                document.getElementById('menu-rank-icon').innerText = currentRank.icon;
-                document.getElementById('menu-rank-title').innerText = currentRank.title;
-                document.getElementById('menu-rank-title').className = `text-[10px] md:text-xs font-black uppercase tracking-wider ${currentRank.color}`;
-                document.getElementById('menu-username-display').innerText = currentUser + " |";
-                document.getElementById('player-hud-name').innerText = currentUser;
-                
-                document.getElementById('login-modal').classList.add('hidden');
-                document.getElementById('start-screen').style.display = 'flex';
+                // Puanı Buluttan Çek
+                db.collection("oyuncular").doc(currentUserId).get().then((doc) => {
+                    if (doc.exists) GameState.elo = doc.data().elo || 0;
+                    else GameState.elo = 0;
+                    
+                    let currentRank = getRankDetails(GameState.elo);
+                    document.getElementById('menu-elo').innerText = GameState.elo;
+                    document.getElementById('menu-rank-icon').innerText = currentRank.icon;
+                    document.getElementById('menu-rank-title').innerText = currentRank.title;
+                    document.getElementById('menu-rank-title').className = `text-[10px] md:text-xs font-black uppercase tracking-wider ${currentRank.color}`;
+                    document.getElementById('menu-username-display').innerText = currentUser + " |";
+                    document.getElementById('player-hud-name').innerText = currentUser;
+                    
+                    document.getElementById('login-modal').classList.add('hidden');
+                    document.getElementById('start-screen').style.display = 'flex';
+                });
             } else {
                 document.getElementById('login-modal').classList.remove('hidden');
             }
@@ -899,16 +913,17 @@
             if (savedDiff) { GameState.botDifficulty = savedDiff; document.querySelectorAll('.diff-btn').forEach(b => { b.classList.remove('bg-white/20', 'text-white', 'shadow-md'); b.classList.add('text-gray-400'); if (b.dataset.diff === savedDiff) { b.classList.add('bg-white/20', 'text-white', 'shadow-md'); b.classList.remove('text-gray-400'); } }); }
             const speedSlider = document.getElementById('speed-slider'); let savedSpeed = sessionStorage.getItem('gameSpeed'); if (savedSpeed) { speedSlider.value = savedSpeed; speedSlider.dispatchEvent(new Event('input')); }
         };
-
         document.getElementById('speed-slider').addEventListener('input', (e) => { let val = parseInt(e.target.value); if(val === 1) GameState.speedMultiplier = 1.5; else if(val === 2) GameState.speedMultiplier = 1.0; else if(val === 3) GameState.speedMultiplier = 0.5; document.documentElement.style.setProperty('--anim-speed', (0.8 * GameState.speedMultiplier) + 's'); sessionStorage.setItem('gameSpeed', val); });
         document.querySelectorAll('.diff-btn').forEach(btn => { btn.addEventListener('click', (e) => { document.querySelectorAll('.diff-btn').forEach(b => { b.classList.remove('bg-white/20', 'text-white', 'shadow-md'); b.classList.add('text-gray-400'); }); e.target.classList.add('bg-white/20', 'text-white', 'shadow-md'); e.target.classList.remove('text-gray-400'); GameState.botDifficulty = e.target.dataset.diff; sessionStorage.setItem('botDifficulty', GameState.botDifficulty); }); });
         
         document.getElementById('settings-btn').addEventListener('click', () => ayarlariOyundanAc()); 
     </script>
 
-    <!-- FIREBASE KODLARI -->
+<!-- FIREBASE KODLARI -->
     <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
+    <!-- YENİ: Firestore (Veritabanı) Kütüphanesi -->
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
 
     <script>
       const firebaseConfig = {
@@ -920,33 +935,51 @@
         appId: "1:704314432015:web:1fdc92b1e4ccf73de3a17a",
         measurementId: "G-J59NDVSZZT"
       };
+      
       firebase.initializeApp(firebaseConfig);
       const auth = firebase.auth();
       const provider = new firebase.auth.GoogleAuthProvider();
+      const db = firebase.firestore(); // YENİ: Veritabanı bağlantısı
+      let currentUserId = null; // YENİ: Oyuncunun gizli Google ID'sini tutacağız
 
       function googleIleGirisYap() {
           auth.signInWithPopup(provider).then((result) => {
               const user = result.user;
               
               currentUser = user.displayName;
+              currentUserId = user.uid; // Her oyuncuya özel Google ID
+              
               sessionStorage.setItem('pisti_username', currentUser);
+              sessionStorage.setItem('pisti_uid', currentUserId);
               
-              GameState.elo = parseInt(localStorage.getItem('pistiElo_' + currentUser) || '0');
-              
-              let currentRank = getRankDetails(GameState.elo);
-              document.getElementById('menu-elo').innerText = GameState.elo;
-              document.getElementById('menu-rank-icon').innerText = currentRank.icon;
-              document.getElementById('menu-rank-title').innerText = currentRank.title;
-              document.getElementById('menu-rank-title').className = `text-[10px] md:text-xs font-black uppercase tracking-wider ${currentRank.color}`;
-              document.getElementById('menu-username-display').innerText = currentUser + " |";
-              document.getElementById('player-hud-name').innerText = currentUser;
+              // YENİ: ELO'YU ARTIK HAFIZADAN DEĞİL, BULUT VERİTABANINDAN ÇEKİYORUZ
+              db.collection("oyuncular").doc(currentUserId).get().then((doc) => {
+                  if (doc.exists) {
+                      GameState.elo = doc.data().elo || 0;
+                  } else {
+                      GameState.elo = 0; // İlk defa giriyorsa ELO'su 0'dır
+                  }
 
-              document.getElementById('login-modal').classList.add('hidden');
-              document.getElementById('start-screen').style.display = 'flex'; 
+                  // Ekranı güncelle
+                  let currentRank = getRankDetails(GameState.elo);
+                  document.getElementById('menu-elo').innerText = GameState.elo;
+                  document.getElementById('menu-rank-icon').innerText = currentRank.icon;
+                  document.getElementById('menu-rank-title').innerText = currentRank.title;
+                  document.getElementById('menu-rank-title').className = `text-[10px] md:text-xs font-black uppercase tracking-wider ${currentRank.color}`;
+                  document.getElementById('menu-username-display').innerText = currentUser + " |";
+                  document.getElementById('player-hud-name').innerText = currentUser;
+
+                  document.getElementById('login-modal').classList.add('hidden');
+                  document.getElementById('start-screen').style.display = 'flex'; 
+                  
+                  if (typeof socket !== 'undefined') {
+                      socket.emit('playerLogin', { name: user.displayName, photo: user.photoURL });
+                  }
+              }).catch(error => {
+                  console.log("Veri çekme hatası:", error);
+                  alert("Bilgileriniz alınamadı, tekrar deneyin.");
+              });
               
-              if (typeof socket !== 'undefined') {
-                  socket.emit('playerLogin', { name: user.displayName, photo: user.photoURL });
-              }
           }).catch((error) => {
               alert("Giriş başarısız: " + error.message);
           });
