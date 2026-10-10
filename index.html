@@ -589,17 +589,31 @@
         socket.on('opponentDisconnected', () => {
             showToast("Rakip oyundan çıktı! Hükmen galip (+15 ELO)", "🏆");
             GameState.elo += 15; 
-            localStorage.setItem('pistiElo_' + currentUser, GameState.elo);
             
+            // 1. SORUNUN ÇÖZÜMÜ: Rakip çıkınca da puanı Firebase'e (Buluta) kaydet!
+            if (typeof currentUserId !== 'undefined' && currentUserId !== null) {
+                db.collection("oyuncular").doc(currentUserId).set({
+                    isim: currentUser,
+                    elo: GameState.elo
+                }, { merge: true });
+            }
+            
+            // Menüdeki rütbe ve yazıları güncelle
             let newRank = getRankDetails(GameState.elo);
             document.getElementById('menu-elo').innerText = GameState.elo;
             document.getElementById('menu-rank-icon').innerText = newRank.icon;
             document.getElementById('menu-rank-title').innerText = newRank.title;
             document.getElementById('menu-rank-title').className = `text-[10px] md:text-xs font-black uppercase tracking-wider ${newRank.color}`;
 
+            // 2. SORUNUN ÇÖZÜMÜ: Oyun tahtasını sıfırlayıp pürüzsüzce menüye dön
             setTimeout(() => {
+                // Arka planda donup kalmaması için kartları ve masayı temizliyoruz
+                GameState.deck = []; GameState.centerPile = []; GameState.playerHand = []; GameState.botHand = []; 
+                document.getElementById('cards-container').innerHTML = '';
+                document.getElementById('deck-visual').style.opacity = '0';
+                
                 temizceAnaMenuyeDon(); 
-            }, 3000);
+            }, 2500); // 3 saniye yerine 2.5 saniyede hızlıca menüye atar
         });
 
         // ==========================================
@@ -797,7 +811,9 @@
             let pMaj = GameState.playerCaptured.length > GameState.botCaptured.length; let bMaj = GameState.botCaptured.length > GameState.playerCaptured.length;
             let pDetails = getScoreDetails(GameState.playerCaptured, GameState.pScore, pMaj); let bDetails = getScoreDetails(GameState.botCaptured, GameState.bScore, bMaj);
 
-            GameState.totalPScore += pDetails.total; GameState.totalBScore += bDetails.total;
+            // Artık tek el oynandığı için toplam skor direkt bu elin skorudur
+            GameState.totalPScore = pDetails.total; 
+            GameState.totalBScore = bDetails.total;
 
             const tbody = document.getElementById('score-details-body');
             tbody.innerHTML = `
@@ -808,65 +824,68 @@
                 <tr><td class="py-1">As ve Valeler</td><td class="text-center">${pDetails.asJ}</td><td class="text-center">${bDetails.asJ}</td></tr>
             `;
 
-            document.getElementById('final-player').innerText = pDetails.total; document.getElementById('final-bot').innerText = bDetails.total;
+            document.getElementById('final-player').innerText = pDetails.total; 
+            document.getElementById('final-bot').innerText = bDetails.total;
             
             let title = document.getElementById('winner-text'); let mainTitle = document.getElementById('modal-title');
             
-            let isMatchOver = false;
-            if (GameState.gameMode === 'single') {
-                isMatchOver = true;
-                document.getElementById('tournament-score-box').classList.add('hidden');
-                document.getElementById('round-score-box').classList.remove('border-b-0', 'rounded-t-lg'); document.getElementById('round-score-box').classList.add('rounded-lg');
-            } else {
-                document.getElementById('tournament-score-box').classList.remove('hidden'); document.getElementById('round-score-box').classList.remove('rounded-lg'); document.getElementById('round-score-box').classList.add('rounded-t-lg', 'border-b-0');
-                if (GameState.totalPScore >= GameState.targetScore || GameState.totalBScore >= GameState.targetScore) isMatchOver = true;
-            }
-
+            // YENİ: Artık 101 beklemiyoruz, 52 kart bitince maç kesin biter!
+            document.getElementById('tournament-score-box').classList.add('hidden');
+            document.getElementById('round-score-box').classList.remove('border-b-0', 'rounded-t-lg'); 
+            document.getElementById('round-score-box').classList.add('rounded-lg');
             document.getElementById('elo-result-badge').innerHTML = ''; 
             
-            if (isMatchOver) {
-                let pScoreMatch = GameState.gameMode === 'single' ? pDetails.total : GameState.totalPScore;
-                let bScoreMatch = GameState.gameMode === 'single' ? bDetails.total : GameState.totalBScore;
-                
-                let baseGain = 35; let baseLoss = 20; let eloChange = 0;
+            let baseGain = 35; let baseLoss = 20; let eloChange = 0;
 
-                mainTitle.innerText = "MAÇ BİTTİ!"; document.getElementById('next-round-btn').classList.add('hidden'); document.getElementById('restart-match-btn').classList.remove('hidden');
-                
-                if(pScoreMatch > bScoreMatch) { title.innerText = "🏆 Maçı Sen Kazandın!"; title.className = "text-xl font-bold mb-4 text-green-400"; fireConfetti(); eloChange = baseGain; } 
-                else if(bScoreMatch > pScoreMatch) { title.innerText = `💀 Rakip Kazandı!`; title.className = "text-xl font-bold mb-4 text-red-500"; eloChange = -baseLoss; } 
-                else { title.innerText = "🤝 Berabere Bitti!"; title.className = "text-xl font-bold mb-4 text-yellow-400"; eloChange = 5; }
+            mainTitle.innerText = "MAÇ BİTTİ!"; 
+            document.getElementById('next-round-btn').classList.add('hidden'); 
+            document.getElementById('restart-match-btn').classList.remove('hidden');
+            
+            // Kazananı Belirle
+            if(pDetails.total > bDetails.total) { 
+                title.innerText = "🏆 Maçı Sen Kazandın!"; 
+                title.className = "text-xl font-bold mb-4 text-green-400"; 
+                fireConfetti(); 
+                eloChange = baseGain; 
+            } 
+            else if(bDetails.total > pDetails.total) { 
+                title.innerText = `💀 Rakip Kazandı!`; 
+                title.className = "text-xl font-bold mb-4 text-red-500"; 
+                eloChange = -baseLoss; 
+            } 
+            else { 
+                title.innerText = "🤝 Berabere Bitti!"; 
+                title.className = "text-xl font-bold mb-4 text-yellow-400"; 
+                eloChange = 5; 
+            }
 
-                if (GameState.gameMode === 'single') {
-                    eloChange = 0;
-                }
+            // Eğer botlara karşıysa ELO değişmesin
+            if (GameState.gameMode === 'single') {
+                eloChange = 0;
+            }
 
-                let oldRank = getRankDetails(GameState.elo);
-                GameState.elo += eloChange; if(GameState.elo < 0) GameState.elo = 0; 
-                // YENİ: ELO'yu Bulut Veritabanına Kaydet!
-                if (typeof currentUserId !== 'undefined' && currentUserId !== null) {
-                    db.collection("oyuncular").doc(currentUserId).set({
-                        isim: currentUser,
-                        elo: GameState.elo
-                    }, { merge: true });
-                }
-                
-                let newRank = getRankDetails(GameState.elo);
+            let oldRank = getRankDetails(GameState.elo);
+            GameState.elo += eloChange; if(GameState.elo < 0) GameState.elo = 0; 
+            
+            // YENİ: Firebase Firestore Bulutuna Kaydet
+            if (typeof currentUserId !== 'undefined' && currentUserId !== null) {
+                db.collection("oyuncular").doc(currentUserId).set({
+                    isim: currentUser,
+                    elo: GameState.elo
+                }, { merge: true });
+            }
 
-                let rankUpMsg = (oldRank.title !== newRank.title && eloChange > 0) ? `<div class="text-[10px] text-yellow-300 mt-1 uppercase animate-pulse">🎉 Yeni Rütbe: ${newRank.title}!</div>` : '';
-                let eloColor = eloChange >= 0 ? 'bg-green-600' : 'bg-red-600'; let eloSign = eloChange >= 0 ? '+' : '';
+            let newRank = getRankDetails(GameState.elo);
+            let rankUpMsg = (oldRank.title !== newRank.title && eloChange > 0) ? `<div class="text-[10px] text-yellow-300 mt-1 uppercase animate-pulse">🎉 Yeni Rütbe: ${newRank.title}!</div>` : '';
+            let eloColor = eloChange >= 0 ? 'bg-green-600' : 'bg-red-600'; let eloSign = eloChange >= 0 ? '+' : '';
 
-                if (GameState.gameMode !== 'single') {
-                    document.getElementById('elo-result-badge').innerHTML = `
-                        <div class="absolute top-0 left-0 w-full ${eloColor} text-white font-bold text-center py-1 text-sm tracking-widest shadow-md z-10 flex flex-col items-center">
-                            <span>ELO: ${eloSign}${eloChange} (Güncel: ${GameState.elo} ${newRank.icon})</span>
-                            ${rankUpMsg}
-                        </div>
-                    `;
-                }
-
-            } else {
-                mainTitle.innerText = "EL BİTTİ"; title.innerText = `İlk 101'e Ulaşan Kazanır!`; title.className = "text-md font-bold mb-4 text-yellow-400";
-                document.getElementById('next-round-btn').classList.remove('hidden'); document.getElementById('restart-match-btn').classList.add('hidden');
+            if (GameState.gameMode !== 'single') {
+                document.getElementById('elo-result-badge').innerHTML = `
+                    <div class="absolute top-0 left-0 w-full ${eloColor} text-white font-bold text-center py-1 text-sm tracking-widest shadow-md z-10 flex flex-col items-center">
+                        <span>ELO: ${eloSign}${eloChange} (Güncel: ${GameState.elo} ${newRank.icon})</span>
+                        ${rankUpMsg}
+                    </div>
+                `;
             }
 
             document.getElementById('game-over-modal').classList.remove('hidden');
