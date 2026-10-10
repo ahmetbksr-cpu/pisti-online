@@ -100,7 +100,7 @@
             <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
         </button>
 
-        <!-- YENİ: Liderlik Tablosu Butonu (Sağ Alt) -->
+        <!-- Liderlik Tablosu Butonu (Sağ Alt) -->
         <button onclick="liderlikTablosunuAc()" class="absolute bottom-6 right-6 z-[320] bg-yellow-600/80 hover:bg-yellow-500 backdrop-blur-md border border-yellow-400/50 text-white p-3 md:p-4 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)] transition-all hover:scale-110 active:scale-95 flex items-center gap-2 group">
             <span class="text-2xl md:text-3xl">🏆</span>
             <span class="hidden group-hover:inline-block font-bold text-sm md:text-base mr-2">SKORLAR</span>
@@ -124,7 +124,7 @@
         <div class="floating-card-bg" style="left: 60%; animation-duration: 14s; animation-delay: 1s;"></div>
         <div class="floating-card-bg" style="left: 80%; animation-duration: 10s; animation-delay: 3s;"></div>
         
-        <!-- ANA MENÜ ORTA KUTUSU (Buna id verdik, ayarlarda gizlenecek) -->
+        <!-- ANA MENÜ ORTA KUTUSU -->
         <div id="main-menu-box" class="relative z-10 flex flex-col items-center p-6 md:p-10 glass-panel rounded-3xl w-11/12 max-w-lg mt-16 md:mt-12 transition-all duration-300">
             <div class="flex gap-2 mb-1 md:mb-2">
                 <span class="text-3xl md:text-4xl">♠</span><span class="text-3xl md:text-4xl text-red-500">♥</span>
@@ -201,7 +201,7 @@
             <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
         </button>
         
-        <!-- YENİ: Hedef 101 kısmı tamamen gizlendi (hidden eklendi) -->
+        <!-- YENİ: Hedef 101 tamamen gizlendi -->
         <div id="hud-tournament" class="absolute top-4 right-16 md:right-20 z-[60] bg-black/40 backdrop-blur-md border border-white/20 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-xl shadow-lg font-bold text-xs md:text-sm hidden">
             Hedef 101: Sen <span id="hud-total-player" class="text-green-400">0</span> - <span id="hud-total-bot" class="text-red-400">0</span> Ahmet
         </div>
@@ -258,7 +258,8 @@
 
             <button id="resume-btn" onclick="ayarlariKapat()" class="w-full bg-blue-600/90 hover:bg-blue-500 text-white font-bold py-2.5 md:py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-blue-400/30 text-sm md:text-base">Kapat</button>
             <button id="modal-restart-btn" onclick="triggerRestartMatch()" class="w-full bg-yellow-600/90 hover:bg-yellow-500 text-white font-bold py-2.5 md:py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-yellow-400/30 text-sm md:text-base">Mevcut Maçı Sıfırla</button>
-            <button id="modal-menu-btn" onclick="temizceAnaMenuyeDon()" class="w-full bg-gray-600/90 hover:bg-gray-500 text-white font-bold py-2.5 md:py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-gray-400/30 text-sm md:text-base">Ana Menüye Dön</button>
+            <!-- YENİ: Maçtan çıkanların sunucudan da anında düşmesi için güncellendi -->
+            <button id="modal-menu-btn" onclick="maciTerkEt()" class="w-full bg-gray-600/90 hover:bg-gray-500 text-white font-bold py-2.5 md:py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-gray-400/30 text-sm md:text-base">Ana Menüye Dön</button>
             <button onclick="logoutUser()" class="w-full bg-red-600/90 hover:bg-red-500 text-white font-bold py-2.5 md:py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-red-400/30 mt-1 md:mt-2 text-sm md:text-base">Hesaptan Çık</button>
         </div>
     </div>
@@ -298,14 +299,6 @@
                 </div>
             </div>
             
-            <div id="tournament-score-box" class="flex justify-between items-center bg-black/60 p-2 md:p-3 rounded-lg mb-4 md:mb-6 border border-gray-500 shadow-inner hidden">
-                <span class="font-bold text-white text-sm md:text-md">GENEL SKOR:</span>
-                <div class="flex gap-6 md:gap-8">
-                    <span id="total-final-player" class="text-xl md:text-2xl font-black text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.5)]">0</span>
-                    <span id="total-final-bot" class="text-xl md:text-2xl font-black text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.5)]">0</span>
-                </div>
-            </div>
-            
             <button id="next-round-btn" onclick="startNextRound()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 md:py-3 rounded-xl shadow-lg active:scale-95 transition-all mb-2 text-sm md:text-base">SONRAKİ ELE GEÇ</button>
             <button id="restart-match-btn" onclick="temizceAnaMenuyeDon()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 md:py-3 rounded-xl shadow-lg active:scale-95 transition-all hidden text-sm md:text-base">ANA MENÜYE DÖN</button>
         </div>
@@ -334,6 +327,16 @@
             ayarlariKapat();
             liderlikKapat();
             document.getElementById('start-screen').style.display = 'flex';
+        }
+
+        // YENİ: Maçtan çıkarken sunucuya haber ver
+        function maciTerkEt() {
+            if (GameState.gameMode === 'multiplayer') {
+                socket.disconnect(); // Bağlantıyı kopar ki rakip anında haberdar olsun
+                setTimeout(() => { socket.connect(); }, 500); // Yeniden bağlan ki yeni maç arayabilsin
+            }
+            GameState.gameMode = 'single'; // Arka planda donmayı engeller
+            temizceAnaMenuyeDon();
         }
 
         function girisEkraninaDon() {
@@ -371,7 +374,6 @@
             if (e.target === this) ayarlariKapat();
         });
 
-        // YENİ: Liderlik Tablosu Fonksiyonları
         function liderlikTablosunuAc() {
             document.getElementById('main-menu-box').style.display = 'none'; 
             document.getElementById('leaderboard-modal').classList.remove('hidden');
@@ -379,7 +381,6 @@
             liste.innerHTML = '<div class="text-center text-gray-400 text-sm animate-pulse">Yükleniyor...</div>';
             
             if (typeof db !== 'undefined') {
-                // Firebase'den ELO'su en yüksek ilk 3 oyuncuyu çek
                 db.collection("oyuncular").orderBy("elo", "desc").limit(3).get()
                 .then((querySnapshot) => {
                     liste.innerHTML = '';
@@ -436,7 +437,6 @@
             if (e.target === this) liderlikKapat();
         });
 
-
         function triggerRestartMatch() {
             if (GameState.gameMode !== 'single') {
                 showToast("Online maçta oyunu sıfırlayamazsınız!", "⚠️");
@@ -479,7 +479,13 @@
         }
 
         function logoutUser() {
+            // YENİ: Hesaptan çıkarken de sunucudan kopar ki rakip bekleyip durmasın
+            if (GameState.gameMode === 'multiplayer') {
+                socket.disconnect();
+                setTimeout(() => { socket.connect(); }, 500);
+            }
             sessionStorage.removeItem('pisti_username');
+            sessionStorage.removeItem('pisti_uid');
             girisEkraninaDon(); 
         }
 
@@ -687,9 +693,11 @@
             document.getElementById('menu-rank-title').className = `text-[10px] md:text-xs font-black uppercase tracking-wider ${newRank.color}`;
 
             setTimeout(() => {
+                // YENİ: Masayı temizleyip modu sıfırlayarak pürüzsüzce menüye döndürüyor
                 GameState.deck = []; GameState.centerPile = []; GameState.playerHand = []; GameState.botHand = []; 
                 document.getElementById('cards-container').innerHTML = '';
                 document.getElementById('deck-visual').style.opacity = '0';
+                GameState.gameMode = 'single'; 
                 
                 temizceAnaMenuyeDon(); 
             }, 2500); 
