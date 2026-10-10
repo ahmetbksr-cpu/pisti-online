@@ -91,6 +91,11 @@
 
     <!-- Ana Menü -->
     <div id="start-screen" class="fixed inset-0 z-[300] flex items-center justify-center">
+        <!-- YENİ: Ana Menü Ayarlar Butonu -->
+        <button onclick="ayarlariMenudenAc()" class="absolute top-4 right-4 z-[320] bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white p-3 rounded-full shadow-lg transition-all hover:rotate-90 active:scale-95">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </button>
+
         <div class="absolute top-6 flex items-center justify-center bg-black/70 backdrop-blur-md border border-white/10 px-5 py-2 rounded-2xl shadow-xl z-[310]">
             <div id="menu-rank-icon" class="text-3xl mr-3 filter drop-shadow-md">🥚</div>
             <div class="flex flex-col justify-center">
@@ -224,9 +229,9 @@
                 </div>
             </div>
 
-            <button id="resume-btn" class="w-full bg-blue-600/90 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-blue-400/30">Oyuna Dön</button>
-            <button onclick="triggerRestartMatch()" class="w-full bg-yellow-600/90 hover:bg-yellow-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-yellow-400/30">Mevcut Maçı Sıfırla</button>
-            <button onclick="temizceAnaMenuyeDon()" class="w-full bg-gray-600/90 hover:bg-gray-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-gray-400/30">Ana Menüye Dön</button>
+            <button id="resume-btn" class="w-full bg-blue-600/90 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-blue-400/30">Kapat</button>
+            <button id="modal-restart-btn" onclick="triggerRestartMatch()" class="w-full bg-yellow-600/90 hover:bg-yellow-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-yellow-400/30">Mevcut Maçı Sıfırla</button>
+            <button id="modal-menu-btn" onclick="temizceAnaMenuyeDon()" class="w-full bg-gray-600/90 hover:bg-gray-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-gray-400/30">Ana Menüye Dön</button>
             <button onclick="logoutUser()" class="w-full bg-red-600/90 hover:bg-red-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-red-400/30 mt-2">Hesaptan Çık</button>
         </div>
     </div>
@@ -291,7 +296,7 @@
         let currentUser = "Oyuncu"; 
 
         // ==========================================
-        // YENİ: EKRAN YÖNETİMİ (Location.reload YERİNE)
+        // EKRAN VE AYAR MENÜSÜ YÖNETİMİ
         // ==========================================
         function temizceAnaMenuyeDon() {
             let gameScreen = document.getElementById('game-board');
@@ -312,6 +317,30 @@
             document.getElementById('game-over-modal').classList.add('hidden');
             document.getElementById('settings-modal').classList.add('hidden');
             document.getElementById('login-modal').classList.remove('hidden');
+        }
+
+        function ayarlariMenudenAc() {
+            document.getElementById('modal-restart-btn').style.display = 'none';
+            document.getElementById('modal-menu-btn').style.display = 'none';
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function ayarlariOyundanAc() {
+            document.getElementById('modal-restart-btn').style.display = 'block';
+            document.getElementById('modal-menu-btn').style.display = 'block';
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function triggerRestartMatch() {
+            if (GameState.gameMode !== 'single') {
+                showToast("Online maçta oyunu sıfırlayamazsınız!", "⚠️");
+                return;
+            }
+            document.getElementById('settings-modal').classList.add('hidden');
+            GameState.totalPScore = 0;
+            GameState.totalBScore = 0;
+            startNextRound(); 
+            showToast("Maç sıfırlandı, yeniden başlıyor!", "🔄");
         }
 
         // ==========================================
@@ -852,7 +881,9 @@
         document.getElementById('speed-slider').addEventListener('input', (e) => { let val = parseInt(e.target.value); if(val === 1) GameState.speedMultiplier = 1.5; else if(val === 2) GameState.speedMultiplier = 1.0; else if(val === 3) GameState.speedMultiplier = 0.5; document.documentElement.style.setProperty('--anim-speed', (0.8 * GameState.speedMultiplier) + 's'); sessionStorage.setItem('gameSpeed', val); });
         document.querySelectorAll('.diff-btn').forEach(btn => { btn.addEventListener('click', (e) => { document.querySelectorAll('.diff-btn').forEach(b => { b.classList.remove('bg-white/20', 'text-white', 'shadow-md'); b.classList.add('text-gray-400'); }); e.target.classList.add('bg-white/20', 'text-white', 'shadow-md'); e.target.classList.remove('text-gray-400'); GameState.botDifficulty = e.target.dataset.diff; sessionStorage.setItem('botDifficulty', GameState.botDifficulty); }); });
         
-        const settingsModal = document.getElementById('settings-modal'); document.getElementById('settings-btn').addEventListener('click', () => settingsModal.classList.remove('hidden')); document.getElementById('resume-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
+        const settingsModal = document.getElementById('settings-modal'); 
+        document.getElementById('settings-btn').addEventListener('click', () => ayarlariOyundanAc()); 
+        document.getElementById('resume-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
     </script>
 
     <!-- FIREBASE KODLARI (SADECE BİR KEZ YÜKLENİYOR) -->
