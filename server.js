@@ -13,6 +13,7 @@ let waitingPlayers = [];
 let roomCounter = 0;
 let activeRooms = {}; 
 let ongoingGames = {}; 
+let matchmakingTimer = null;
 
 const TURN_TIME_LIMIT = 20000; // 20 saniye hamle süresi
 
@@ -35,8 +36,9 @@ function getCardDetails(id) {
     return ranks[rIdx]; 
 }
 
-// ELO bazlı eşleştirme kontrolü
+// ELO bazlı eşleştirme kontrolü (Fix 11: Zamanlayıcı sızıntısı ve sonsuz bekleme önlendi)
 function tryMatchmaking() {
+    clearTimeout(matchmakingTimer);
     waitingPlayers = waitingPlayers.filter(p => p.socket && p.socket.connected);
     if (waitingPlayers.length < 2) return;
 
@@ -50,8 +52,8 @@ function tryMatchmaking() {
             const eloDiff = Math.abs(p1.elo - p2.elo);
             const waitTime = Math.max(now - p1.joinedAt, now - p2.joinedAt);
 
-            // ELO farkı <= 300 ise veya oyunculardan biri 10 saniyeden fazla beklediyse eşleştir
-            if (eloDiff <= 300 || waitTime > 10000) {
+            // ELO farkı <= 300 ise veya oyunculardan biri 8 saniyeden fazla beklediyse eşleştir
+            if (eloDiff <= 300 || waitTime >= 8000) {
                 matchedPair = [i, j];
                 break;
             }
@@ -59,9 +61,9 @@ function tryMatchmaking() {
         if (matchedPair) break;
     }
 
-    // Eğer özel koşul sağlanmadıysa ama 2 kişi de yeni girdiyse, 5 sn sonra tekrar kontrol etmek üzere zamanlayıcı kur
     if (!matchedPair) {
-        setTimeout(tryMatchmaking, 3000);
+        // Kuyrukta hala >= 2 kişi varsa 2 saniye sonra tekrar kontrol et
+        matchmakingTimer = setTimeout(tryMatchmaking, 2000);
         return;
     }
 
@@ -84,7 +86,7 @@ function tryMatchmaking() {
     if (waitingPlayers.length >= 2) tryMatchmaking();
 }
 
-// Anti-Cheat: Yerdeki ilk 3 kapalı kart henüz kesilmediyse ID'lerini gizle
+// Anti-Cheat (Fix 7): Yerdeki ilk 3 kapalı kart henüz kesilmediyse ID'lerini gizle
 function getMaskedCenterPile(game) {
     return game.centerPile.map((cardId, idx) => {
         if (!game.firstCaptureDone && idx < 3 && game.initialHiddenIds.includes(cardId)) {
@@ -95,18 +97,17 @@ function getMaskedCenterPile(game) {
 }
 
 // Oyun durumunu anlık olarak her iki oyuncuya aktarma
-function sendGameUpdate(game, lastPlayedCardId = null, playedBySocketId = null) {
+function sendGameUpdate(game, opts = {}) {
     if (!game || !game.p1 || !game.p2) return;
     const maskedCenter = getMaskedCenterPile(game);
 
     io.to(game.p1.id).emit('gameUpdate', {
         myHand: game.p1Hand, 
         opponentHandCount: game.p2Hand.length,
+        opponentName: game.p2.username || 'Rakip',
         centerPile: maskedCenter, 
         turn: game.turn,
         turnDeadline: game.turnDeadline,
-        myCapturedCount: game.p1Captured.length, 
-        opponentCapturedCount: game.p2Captured.length,
         myCaptured: game.p1Captured, 
         opponentCaptured: game.p2Captured,
         pScore: game.p1Score, 
@@ -114,18 +115,18 @@ function sendGameUpdate(game, lastPlayedCardId = null, playedBySocketId = null) 
         deckCount: game.deck.length,
         myPistiPairs: game.p1Pisti, 
         opponentPistiPairs: game.p2Pisti,
-        lastPlayedCardId: lastPlayedCardId,
-        playedByOpponent: playedBySocketId === game.p2.id
+        lastPlayedCardId: opts.lastPlayedCardId || null,
+        playedByOpponent: opts.playedBySocketId === game.p2.id,
+        isNewDeal: !!opts.isNewDeal
     });
 
     io.to(game.p2.id).emit('gameUpdate', {
         myHand: game.p2Hand, 
         opponentHandCount: game.p1Hand.length,
+        opponentName: game.p1.username || 'Rakip',
         centerPile: maskedCenter, 
         turn: game.turn,
         turnDeadline: game.turnDeadline,
-        myCapturedCount: game.p2Captured.length, 
-        opponentCapturedCount: game.p1Captured.length,
         myCaptured: game.p2Captured, 
         opponentCaptured: game.p1Captured,
         pScore: game.p2Score, 
@@ -133,13 +134,14 @@ function sendGameUpdate(game, lastPlayedCardId = null, playedBySocketId = null) 
         deckCount: game.deck.length,
         myPistiPairs: game.p2Pisti, 
         opponentPistiPairs: game.p1Pisti,
-        lastPlayedCardId: lastPlayedCardId,
-        playedByOpponent: playedBySocketId === game.p1.id
+        lastPlayedCardId: opts.lastPlayedCardId || null,
+        playedByOpponent: opts.playedBySocketId === game.p1.id,
+        isNewDeal: !!opts.isNewDeal
     });
 }
 
-// AFK / Hamle süresi sayacı başlatma
-function startTurnTimer(game) {
+// AFK / Hamle süresi sayacı başlatma (Fix 10)
+function startTurnTimer(game, extraDelayMs = 0) {
     if (!game) return;
     clearTimeout(game.turnTimer);
     if (game.turn === 'none' || !ongoingGames[game.roomId]) {
@@ -147,7 +149,8 @@ function startTurnTimer(game) {
         return;
     }
 
-    game.turnDeadline = Date.now() + TURN_TIME_LIMIT;
+    const totalWait = TURN_TIME_LIMIT + extraDelayMs;
+    game.turnDeadline = Date.now() + totalWait;
     game.turnTimer = setTimeout(() => {
         if (!ongoingGames[game.roomId] || game.isProcessing || game.turn === 'none') return;
         let isP1 = (game.turn === game.p1.id);
@@ -157,10 +160,10 @@ function startTurnTimer(game) {
             io.to(game.turn).emit('autoPlayedTimeout');
             executeCardPlay(game, game.turn, randomCard);
         }
-    }, TURN_TIME_LIMIT);
+    }, totalWait);
 }
 
-// Kart oynama ana fonksiyonu (Hem normal tıklama hem AFK zamanlayıcısı kullanır)
+// Kart oynama ana fonksiyonu (Fix 3 & 9)
 function executeCardPlay(game, playerSocketId, cardId) {
     if (!game || game.isProcessing || game.turn !== playerSocketId) return;
 
@@ -190,8 +193,8 @@ function executeCardPlay(game, playerSocketId, cardId) {
     let nextTurn = isP1 ? game.p2.id : game.p1.id;
     const roomId = game.roomId;
 
-    // Kartın ortaya düştüğünü her iki oyuncuya bildir
-    sendGameUpdate(game, cardId, playerSocketId);
+    // Önce kartın ortaya düştüğünü göster
+    sendGameUpdate(game, { lastPlayedCardId: cardId, playedBySocketId: playerSocketId });
     
     if (isPisti) {
         let pts = (rank === 'J') ? 20 : 10;
@@ -215,7 +218,7 @@ function executeCardPlay(game, playerSocketId, cardId) {
                 else { game.p2Score += pts; game.p2Pisti.push({ bottom: topCardId, top: cardId }); }
             }
 
-            // İlk kesmeyi yapan oyuncuya yerdeki 3 kapalı kartın ne olduğunu özel olarak gönder
+            // İlk kesmeyi yapan oyuncuya yerdeki 3 kapalı kartı özel olarak gönder (Fix 6)
             if (wasFirstCapture) {
                 io.to(playerSocketId).emit('revealInitialCards', game.initialHiddenIds);
             }
@@ -240,10 +243,10 @@ function checkDealHands(game, roomId) {
         if (game.deck.length > 0) {
             for (let i = 0; i < 4; i++) if (game.deck.length > 0) game.p1Hand.push(game.deck.pop());
             for (let i = 0; i < 4; i++) if (game.deck.length > 0) game.p2Hand.push(game.deck.pop());
-            startTurnTimer(game);
-            sendGameUpdate(game);
+            // Yeni el dağıtım animasyonu için 800ms ekstra süre tanı
+            startTurnTimer(game, 800);
+            sendGameUpdate(game, { isNewDeal: true });
         } else {
-            // Deste bitti: yerde kalan kartları son kesen oyuncuya ver
             clearTimeout(game.turnTimer);
             game.turn = 'none';
             game.turnDeadline = null;
@@ -311,6 +314,7 @@ io.on('connection', (socket) => {
         waitingPlayers.push({ 
             id: socket.id, 
             elo: (data && typeof data.elo === 'number') ? data.elo : 0, 
+            username: (data && data.username) ? String(data.username).slice(0, 16) : 'Oyuncu',
             joinedAt: Date.now(),
             socket: socket 
         });
@@ -328,7 +332,7 @@ io.on('connection', (socket) => {
             let deck = getNewDeck();
             let c1 = deck.pop(), c2 = deck.pop(), c3 = deck.pop(), c4 = deck.pop();
             
-            // Kural Fix: Yere açılan 4. kart (en üstteki açık kart) Vale (J) olamaz!
+            // Kural Fix 5: Yere açılan 4. kart (en üstteki açık kart) Vale (J) olamaz!
             while (getCardDetails(c4) === 'J') {
                 deck.unshift(c4);
                 c4 = deck.pop();
@@ -359,14 +363,18 @@ io.on('connection', (socket) => {
             room.players[1].socket.gameRoomId = roomId;
             delete activeRooms[roomId];
 
-            io.to(roomId).emit('matchStarted');
+            io.to(roomId).emit('matchStarted', {
+                p1Name: room.players[0].username,
+                p2Name: room.players[1].username
+            });
+
             setTimeout(() => {
                 const game = ongoingGames[roomId];
                 if (game) {
-                    startTurnTimer(game);
-                    sendGameUpdate(game);
+                    startTurnTimer(game, 800);
+                    sendGameUpdate(game, { isNewDeal: true });
                 }
-            }, 800);
+            }, 600);
         }
     });
 

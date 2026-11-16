@@ -34,24 +34,36 @@
         .playing-card.playable.face-up .card-inner:hover { transform: translateY(-15px) scale(1.05) rotateY(180deg); }
         .card-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; }
         .card-back { background: repeating-linear-gradient(45deg, #991b1b 0, #991b1b 6px, #b91c1c 6px, #b91c1c 12px); border: 3px solid #f8fafc; }
-        .card-front { background: #fff; transform: rotateY(180deg); padding: 4px; border: 1px solid #ccc; }
+        
+        /* Fix 1: Mobil ve Masaüstü Kart Sembol Orantıları ve Emoji Önleme */
+        .card-front { 
+            background: #fff; transform: rotateY(180deg); padding: 4px 5px; border: 1px solid #ccc; 
+            font-family: 'Poppins', 'Segoe UI Symbol', 'Apple Symbols', sans-serif;
+            font-variant-emoji: text;
+        }
         .card-front.red { color: #dc2626; } .card-front.black { color: #171717; }
-        .card-corner { display: flex; flex-direction: column; align-items: center; font-weight: 800; line-height: 0.9; font-size: 1rem; }
-        @media (min-width: 768px) { .card-corner { font-size: 1.2rem; } }
-        .card-corner.bottom { transform: rotate(180deg); }
-        .card-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; }
+        .card-corner { display: flex; flex-direction: column; align-items: center; font-weight: 800; line-height: 1; font-size: 0.78rem; width: 16px; }
+        .card-sub { font-size: 0.72rem; line-height: 1; margin-top: 1px; font-variant-emoji: text; }
+        .card-corner.bottom { transform: rotate(180deg); align-self: flex-end; }
+        .card-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.55rem; line-height: 1; pointer-events: none; font-variant-emoji: text; }
+        @media (min-width: 768px) { 
+            .card-front { padding: 6px 7px; }
+            .card-corner { font-size: 1.05rem; width: 22px; } 
+            .card-sub { font-size: 0.95rem; }
+            .card-center { font-size: 2.25rem; } 
+        }
 
         #deck-visual { position: absolute; width: var(--card-w); height: var(--card-h); border-radius: 8px; background: repeating-linear-gradient(45deg, #991b1b 0, #991b1b 6px, #b91c1c 6px, #b91c1c 12px); border: 2px solid #fff; transition: box-shadow 0.3s, opacity 0.3s, top 0.3s; z-index: 10; }
         .hud-box { position: relative; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 8px 16px; text-align: center; z-index: 50; }
         .score-text { font-size: 1.8rem; font-weight: 800; transition: transform 0.2s; }
         .score-pulse { transform: scale(1.4); color: #fbbf24; text-shadow: 0 0 15px #fbbf24; }
         #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
-        .static-card { width: 70px; height: 105px; background: white; border-radius: 8px; padding: 4px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-family: 'Poppins', sans-serif; font-weight: 800; position: relative; }
+        .static-card { width: 65px; height: 100px; background: white; border-radius: 8px; padding: 4px 5px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-family: 'Poppins', 'Segoe UI Symbol', sans-serif; font-weight: 800; position: relative; font-variant-emoji: text; }
         .static-card.red { color: #dc2626; } .static-card.black { color: #171717; }
-        .s-corner { display: flex; flex-direction: column; align-items: center; line-height: 0.9; }
-        .s-corner.bottom { transform: rotate(180deg); }
-        .s-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; }
-        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .s-corner { display: flex; flex-direction: column; align-items: center; line-height: 1; font-size: 0.8rem; width: 16px; }
+        .s-corner.bottom { transform: rotate(180deg); align-self: flex-end; }
+        .s-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.6rem; line-height: 1; }
+        .glass-panel { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); }
         input[type="range"] { -webkit-appearance: none; background: rgba(255, 255, 255, 0.2); height: 6px; border-radius: 5px; outline: none; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #22c55e; cursor: pointer; box-shadow: 0 0 10px rgba(34, 197, 94, 0.8); }
         @keyframes floatUp { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 20% { transform: translate(-50%, -60%) scale(1.2); opacity: 1; } 80% { transform: translate(-50%, -100%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -120%) scale(1); opacity: 0; } }
@@ -68,18 +80,108 @@
         <span id="toast-message" class="text-sm tracking-wide">Bildirim mesajı</span>
     </div>
 
+    <!-- 17. ÖZELLİK: GİRİŞ YAP / KAYIT OL / GOOGLE İLE BAĞLAN EKRANI -->
+    <div id="auth-screen" class="fixed inset-0 z-[600] flex items-center justify-center bg-black/60 backdrop-blur-md">
+        <div class="relative z-10 flex flex-col items-center p-7 md:p-9 glass-panel rounded-3xl w-11/12 max-w-md border border-white/15">
+            <div class="flex gap-2 mb-1">
+                <span class="text-2xl">♠︎</span><span class="text-2xl text-red-500">♥︎</span>
+                <span class="text-2xl text-red-500">♦︎</span><span class="text-2xl">♣︎</span>
+            </div>
+            <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 mb-5 tracking-wide" style="font-family: 'Poppins', sans-serif;">PİŞTİ ONLINE</h2>
+
+            <!-- Sekmeler: Giriş Yap / Kayıt Ol -->
+            <div class="flex bg-black/40 rounded-xl p-1 border border-white/10 w-full mb-5">
+                <button id="tab-login-btn" onclick="switchAuthTab('login')" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-white/20 text-white shadow-md">GİRİŞ YAP</button>
+                <button id="tab-register-btn" onclick="switchAuthTab('register')" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold transition-all text-gray-400 hover:text-white">KAYIT OL</button>
+            </div>
+
+            <!-- Giriş Formu -->
+            <form id="login-form" onsubmit="handleAuthSubmit(event, 'login')" class="w-full flex flex-col gap-3">
+                <div>
+                    <label class="text-[11px] text-gray-300 font-bold uppercase tracking-wider ml-1">Kullanıcı Adı</label>
+                    <input id="login-username" type="text" required minlength="3" maxlength="15" placeholder="Kullanıcı adınız..." class="w-full mt-1 px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-white text-sm focus:outline-none focus:border-yellow-400 transition-colors">
+                </div>
+                <div>
+                    <label class="text-[11px] text-gray-300 font-bold uppercase tracking-wider ml-1">Şifre</label>
+                    <input id="login-password" type="password" required minlength="4" placeholder="••••••••" class="w-full mt-1 px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-white text-sm focus:outline-none focus:border-yellow-400 transition-colors">
+                </div>
+                <button type="submit" class="w-full mt-2 py-3.5 rounded-xl font-black text-sm uppercase tracking-wider text-black bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 shadow-lg active:scale-95 transition-all">GİRİŞ YAP</button>
+            </form>
+
+            <!-- Kayıt Formu -->
+            <form id="register-form" onsubmit="handleAuthSubmit(event, 'register')" class="w-full flex flex-col gap-3 hidden">
+                <div>
+                    <label class="text-[11px] text-gray-300 font-bold uppercase tracking-wider ml-1">Kullanıcı Adı Seç</label>
+                    <input id="reg-username" type="text" required minlength="3" maxlength="15" placeholder="Örn: Ahmet26" class="w-full mt-1 px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-white text-sm focus:outline-none focus:border-green-400 transition-colors">
+                </div>
+                <div>
+                    <label class="text-[11px] text-gray-300 font-bold uppercase tracking-wider ml-1">Şifre Oluştur</label>
+                    <input id="reg-password" type="password" required minlength="4" placeholder="En az 4 karakter" class="w-full mt-1 px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-white text-sm focus:outline-none focus:border-green-400 transition-colors">
+                </div>
+                <button type="submit" class="w-full mt-2 py-3.5 rounded-xl font-black text-sm uppercase tracking-wider text-white bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 shadow-lg active:scale-95 transition-all">HESAP OLUŞTUR</button>
+            </form>
+
+            <div class="flex items-center w-full my-4">
+                <div class="flex-1 h-px bg-white/10"></div>
+                <span class="px-3 text-[11px] text-gray-400 font-bold uppercase">veya</span>
+                <div class="flex-1 h-px bg-white/10"></div>
+            </div>
+
+            <!-- Google ile Giriş Butonu -->
+            <button onclick="loginWithGoogle()" class="w-full py-3 px-4 rounded-xl bg-white hover:bg-gray-100 text-gray-800 font-bold text-sm flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all">
+                <svg class="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/>
+                    <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/>
+                    <path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/>
+                    <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.8C3.5 20.9 7.4 24 12 24z"/>
+                </svg>
+                <span>Google Hesabıyla Bağlan</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Google Hesap Seçim Modalı (Hızlı & Yerel Google OAuth Akışı) -->
+    <div id="google-modal" class="fixed inset-0 z-[700] bg-black/80 backdrop-blur-sm flex items-center justify-center hidden">
+        <div class="bg-white text-gray-800 rounded-2xl p-6 w-11/12 max-w-sm shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center gap-2 border-b pb-3">
+                <svg class="w-6 h-6" viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/>
+                    <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/>
+                    <path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/>
+                    <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.8C3.5 20.9 7.4 24 12 24z"/>
+                </svg>
+                <span class="font-bold text-base text-gray-700">Google ile Oturum Aç</span>
+            </div>
+            <p class="text-xs text-gray-500">Pişti Online uygulamasına devam etmek için Google profil adınızı veya e-postanızı girin:</p>
+            <input id="google-email-input" type="text" placeholder="ornek@gmail.com veya Adınız" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+            <div class="flex justify-end gap-2 mt-1">
+                <button onclick="closeGoogleModal()" class="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-lg">İptal</button>
+                <button onclick="confirmGoogleLogin()" class="px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow">Devam Et</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Premium Start Screen -->
     <div id="start-screen" class="fixed inset-0 z-[300] flex items-center justify-center">
-        <!-- DİNAMİK: Rütbe ve ELO Paneli -->
-        <div class="absolute top-6 flex items-center justify-center bg-black/70 backdrop-blur-md border border-white/10 px-5 py-2 rounded-2xl shadow-xl z-[310]">
-            <div id="menu-rank-icon" class="text-3xl mr-3 filter drop-shadow-md">🥚</div>
-            <div class="flex flex-col justify-center">
-                <span id="menu-rank-title" class="text-xs font-black uppercase tracking-wider text-gray-300">Çaylak</span>
-                <div class="flex items-end gap-1">
-                    <span class="text-[10px] text-yellow-500 font-bold uppercase tracking-widest leading-none pb-0.5">ELO:</span>
-                    <span id="menu-elo" class="text-lg font-black text-yellow-400 leading-none drop-shadow-md" style="font-family: 'Poppins', sans-serif;">0</span>
+        <!-- DİNAMİK: Kullanıcı Profili, Rütbe ve ELO Paneli -->
+        <div class="absolute top-6 flex items-center justify-between gap-4 bg-black/70 backdrop-blur-md border border-white/10 px-5 py-2.5 rounded-2xl shadow-xl z-[310]">
+            <div class="flex items-center">
+                <div id="menu-rank-icon" class="text-3xl mr-3 filter drop-shadow-md">🥚</div>
+                <div class="flex flex-col justify-center">
+                    <div class="flex items-center gap-1.5">
+                        <span id="menu-username-display" class="text-xs font-black text-white tracking-wide">Oyuncu</span>
+                        <span class="text-gray-500 text-xs">•</span>
+                        <span id="menu-rank-title" class="text-[11px] font-black uppercase tracking-wider text-gray-300">Çaylak</span>
+                    </div>
+                    <div class="flex items-end gap-1 mt-0.5">
+                        <span class="text-[10px] text-yellow-500 font-bold uppercase tracking-widest leading-none pb-0.5">ELO:</span>
+                        <span id="menu-elo" class="text-lg font-black text-yellow-400 leading-none drop-shadow-md" style="font-family: 'Poppins', sans-serif;">0</span>
+                    </div>
                 </div>
             </div>
+            <button onclick="logoutUser()" title="Çıkış Yap" class="ml-2 px-2.5 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 text-red-300 text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95">
+                Çıkış
+            </button>
         </div>
 
         <div class="floating-card-bg" style="left: 10%; animation-duration: 12s; animation-delay: 0s;"></div>
@@ -89,8 +191,8 @@
         
         <div class="relative z-10 flex flex-col items-center p-10 glass-panel rounded-3xl w-11/12 max-w-lg mt-12">
             <div class="flex gap-2 mb-2">
-                <span class="text-4xl">♠</span><span class="text-4xl text-red-500">♥</span>
-                <span class="text-4xl text-red-500">♦</span><span class="text-4xl">♣</span>
+                <span class="text-4xl">♠︎</span><span class="text-4xl text-red-500">♥︎</span>
+                <span class="text-4xl text-red-500">♦︎</span><span class="text-4xl">♣︎</span>
             </div>
             <h1 class="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] mb-6 text-center" style="font-family: 'Poppins', sans-serif;">PİŞTİ OYNA</h1>
             
@@ -177,7 +279,7 @@
         </div>
 
         <div class="absolute bottom-4 right-4 hud-box">
-            <div class="text-xs text-gray-400 font-bold tracking-widest mb-1 uppercase">Sen</div>
+            <div id="player-name-hud" class="text-xs text-gray-400 font-bold tracking-widest mb-1 uppercase">Sen</div>
             <div id="player-score" class="score-text text-green-400">0</div>
             <div class="text-xs mt-1 bg-black/50 px-2 py-1 rounded">Kasa: <span id="player-count">0</span></div>
         </div>
@@ -269,6 +371,8 @@
         let acceptTimerInterval = null;
         let turnCountdownInterval = null;
         let toastTimeout = null;
+        let activeDragCardId = null; // Fix 4: Multi-touch ile aynı anda 2 kart sürüklemeyi engeller
+        let cancelActiveDragFn = null;
 
         // 1. TOAST BİLDİRİM FONKSİYONU
         function showToast(message, icon = 'ℹ️') {
@@ -281,19 +385,150 @@
             toastTimeout = setTimeout(() => { toast.style.top = '-100px'; toast.classList.add('opacity-0'); }, 3000);
         }
 
+        // 17. ÖZELLİK: KULLANICI GİRİŞ / KAYIT / GOOGLE AUTH YÖNETİMİ
+        const AuthManager = {
+            currentUser: null,
+            getUsersDB() {
+                try { return JSON.parse(localStorage.getItem('pistiUsersDB') || '{}'); } 
+                catch { return {}; }
+            },
+            saveUsersDB(db) {
+                localStorage.setItem('pistiUsersDB', JSON.stringify(db));
+            },
+            loginSuccess(username, provider = 'local') {
+                const cleanName = username.trim().slice(0, 15);
+                let db = this.getUsersDB();
+                const key = cleanName.toLowerCase();
+                if (!db[key]) {
+                    db[key] = { username: cleanName, password: '', elo: parseInt(localStorage.getItem('pistiElo') || '0', 10), provider };
+                    this.saveUsersDB(db);
+                }
+                this.currentUser = db[key];
+                localStorage.setItem('pistiActiveUser', key);
+                GameState.username = this.currentUser.username;
+                GameState.elo = this.currentUser.elo || 0;
+                localStorage.setItem('pistiElo', GameState.elo);
+
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('google-modal').classList.add('hidden');
+                updateMenuRankUI();
+                showToast(`Hoş geldin, ${this.currentUser.username}!`, '👋');
+            },
+            syncElo(newElo) {
+                if (!this.currentUser) return;
+                let db = this.getUsersDB();
+                const key = this.currentUser.username.toLowerCase();
+                if (db[key]) {
+                    db[key].elo = newElo;
+                    this.saveUsersDB(db);
+                }
+            }
+        };
+
+        function switchAuthTab(tab) {
+            const loginForm = document.getElementById('login-form');
+            const regForm = document.getElementById('register-form');
+            const loginBtn = document.getElementById('tab-login-btn');
+            const regBtn = document.getElementById('tab-register-btn');
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                loginBtn.className = "flex-1 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-white/20 text-white shadow-md";
+                regBtn.className = "flex-1 py-2 rounded-lg text-xs md:text-sm font-bold transition-all text-gray-400 hover:text-white";
+            } else {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                regBtn.className = "flex-1 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-white/20 text-white shadow-md";
+                loginBtn.className = "flex-1 py-2 rounded-lg text-xs md:text-sm font-bold transition-all text-gray-400 hover:text-white";
+            }
+        }
+
+        function handleAuthSubmit(e, mode) {
+            e.preventDefault();
+            let db = AuthManager.getUsersDB();
+
+            if (mode === 'register') {
+                const u = document.getElementById('reg-username').value.trim();
+                const p = document.getElementById('reg-password').value;
+                const key = u.toLowerCase();
+                if (db[key]) {
+                    showToast("Bu kullanıcı adı zaten alınmış!", "❌");
+                    return;
+                }
+                db[key] = { username: u, password: p, elo: 0, provider: 'local' };
+                AuthManager.saveUsersDB(db);
+                AuthManager.loginSuccess(u, 'local');
+            } else {
+                const u = document.getElementById('login-username').value.trim();
+                const p = document.getElementById('login-password').value;
+                const key = u.toLowerCase();
+                if (!db[key]) {
+                    showToast("Kullanıcı bulunamadı! Lütfen önce kayıt olun.", "⚠️");
+                    return;
+                }
+                if (db[key].password !== p) {
+                    showToast("Hatalı şifre girdiniz!", "❌");
+                    return;
+                }
+                AuthManager.loginSuccess(db[key].username, 'local');
+            }
+        }
+
+        function loginWithGoogle() {
+            // Eğer sayfada Firebase Auth tanımlıysa gerçek Google Popup açar, yoksa yerleşik hızlı Google modalını açar
+            if (window.firebase && firebase.auth) {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                firebase.auth().signInWithPopup(provider)
+                    .then(res => {
+                        const name = (res.user && res.user.displayName) ? res.user.displayName : 'GoogleOyuncu';
+                        AuthManager.loginSuccess(name, 'google');
+                    })
+                    .catch(() => {
+                        document.getElementById('google-modal').classList.remove('hidden');
+                    });
+            } else {
+                document.getElementById('google-modal').classList.remove('hidden');
+                document.getElementById('google-email-input').focus();
+            }
+        }
+
+        function closeGoogleModal() {
+            document.getElementById('google-modal').classList.add('hidden');
+        }
+
+        function confirmGoogleLogin() {
+            const rawVal = document.getElementById('google-email-input').value.trim();
+            if (!rawVal) {
+                showToast("Lütfen bir Google e-postası veya ad girin.", "⚠️");
+                return;
+            }
+            const namePart = rawVal.includes('@') ? rawVal.split('@')[0] : rawVal;
+            AuthManager.loginSuccess(namePart, 'google');
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('pistiActiveUser');
+            AuthManager.currentUser = null;
+            document.getElementById('auth-screen').classList.remove('hidden');
+            showToast("Oturum kapatıldı.", "🔒");
+        }
+
         // 2. TEMEL OYUN DURUMU (GAMESTATE)
         const GameState = {
+            username: 'Oyuncu', opponentName: 'Rakip',
             deck: [], centerPile: [], playerHand: [], botHand: [], playerCaptured: [], botCaptured: [], playerPistiPairs: [], botPistiPairs: [],
             pScore: 0, bScore: 0, turn: 'none', lastCapturer: null, isFirstCapture: true, initialHiddenIds: [], botDifficulty: 'orta',
             elBaslayici: 'player', speedMultiplier: 1.0, soundEnabled: true, totalPScore: 0, totalBScore: 0, targetScore: 101, gameMode: 'single',
-            isPaused: false, pendingBotMove: false,
+            isPaused: false, pendingBotMove: false, isDealingAnim: false,
             elo: parseInt(localStorage.getItem('pistiElo') || '0', 10),
             ResetForNewMatch() {
+                if (cancelActiveDragFn) cancelActiveDragFn();
                 this.deck = []; this.centerPile = []; this.playerHand = []; this.botHand = [];
                 this.playerCaptured = []; this.botCaptured = []; this.playerPistiPairs = []; this.botPistiPairs = [];
                 this.pScore = 0; this.bScore = 0; this.turn = 'none'; this.lastCapturer = null;
                 this.isFirstCapture = true; this.initialHiddenIds = [];
-                this.isPaused = false; this.pendingBotMove = false;
+                this.isPaused = false; this.pendingBotMove = false; this.isDealingAnim = false;
                 clearInterval(turnCountdownInterval);
             },
             calcStandardPoints(stash) { 
@@ -311,10 +546,13 @@
 
         function updateMenuRankUI() {
             let currentRank = getRankDetails(GameState.elo);
+            document.getElementById('menu-username-display').innerText = GameState.username;
+            document.getElementById('player-name-hud').innerText = GameState.username;
             document.getElementById('menu-elo').innerText = GameState.elo;
             document.getElementById('menu-rank-icon').innerText = currentRank.icon;
             document.getElementById('menu-rank-title').innerText = currentRank.title;
-            document.getElementById('menu-rank-title').className = `text-xs font-black uppercase tracking-wider ${currentRank.color}`;
+            document.getElementById('menu-rank-title').className = `text-[11px] font-black uppercase tracking-wider ${currentRank.color}`;
+            AuthManager.syncElo(GameState.elo);
         }
 
         // 3. MULTIPLAYER: EŞLEŞTİRME VE SOKET YÖNETİMİ
@@ -324,7 +562,7 @@
             document.getElementById('matchmaking-screen').classList.remove('hidden');
             document.getElementById('matchmaking-title').innerText = "RAKİP ARANIYOR...";
             if (document.getElementById('search-elo-display')) document.getElementById('search-elo-display').innerText = GameState.elo;
-            socket.emit('findMatch', { elo: GameState.elo });
+            socket.emit('findMatch', { elo: GameState.elo, username: GameState.username });
         }
 
         function cancelMatchmaking() {
@@ -371,7 +609,7 @@
             clearInterval(acceptTimerInterval);
             GameState.ResetForNewMatch();
             GameState.gameMode = 'multiplayer';
-            localStorage.setItem('inProgressMultiplayer', 'true'); // Rage-quit takibi
+            localStorage.setItem('inProgressMultiplayer', 'true');
             document.getElementById('hud-tournament').style.display = 'none';
             document.getElementById('match-accept-screen').classList.add('hidden');
             document.getElementById('game-over-modal').classList.add('hidden');
@@ -384,17 +622,18 @@
             renderBoard();
         });
 
-        // İlk kesmeyi yapan oyuncuya sunucudan gelen gerçek 3 kapalı kartı göster
+        // Fix 6: İlk kesmeyi yapan oyuncuya gerçek 3 kapalı kartı göster (Multiplayer'da 4sn sonra otomatik kapanır)
         socket.on('revealInitialCards', (hiddenIds) => {
             GameState.initialHiddenIds = hiddenIds;
-            promptRevealModal();
+            promptRevealModal(true);
         });
 
         socket.on('autoPlayedTimeout', () => {
+            if (cancelActiveDragFn) cancelActiveDragFn();
             showToast("Süren dolduğu için otomatik kart oynandı!", "⏳");
         });
 
-        // Multiplayer Hamle Geri Sayım Görseli
+        // Fix 10: Multiplayer Hamle Geri Sayım Görseli
         function startClientTurnTimer(deadline) {
             clearInterval(turnCountdownInterval);
             if (!deadline || GameState.turn === 'none') {
@@ -406,7 +645,7 @@
                 if (GameState.turn === 'player') {
                     document.getElementById('player-turn-text').innerText = `🎯 SIRA SENDE (${rem}sn)`;
                 } else if (GameState.turn === 'bot') {
-                    document.getElementById('bot-turn-text').innerText = `🔄 RAKİP DÜŞÜNÜYOR... (${rem}sn)`;
+                    document.getElementById('bot-turn-text').innerText = `🔄 ${GameState.opponentName.toUpperCase()} DÜŞÜNÜYOR... (${rem}sn)`;
                 }
                 if (rem <= 0) clearInterval(turnCountdownInterval);
             };
@@ -415,12 +654,15 @@
         }
 
         // SUNUCUDAN GELEN BİLGİYİ MASAYA AKTARMA
-        socket.on('gameUpdate', (data) => {
+        socket.on('gameUpdate', async (data) => {
             if (!allCards || allCards.length === 0) { buildDeck(); }
+            if (cancelActiveDragFn && data.turn !== socket.id) cancelActiveDragFn();
 
             const prevOpponentHandCount = GameState.botHand.length;
+            GameState.opponentName = data.opponentName || 'Rakip';
+            document.getElementById('bot-name-hud').innerText = GameState.opponentName;
+            document.getElementById('bot-name-score').innerText = GameState.opponentName;
 
-            GameState.playerHand = data.myHand;
             GameState.centerPile = data.centerPile;
             GameState.playerCaptured = data.myCaptured;
             GameState.botCaptured = data.opponentCaptured;
@@ -430,13 +672,7 @@
             GameState.botPistiPairs = data.opponentPistiPairs;
             GameState.deck = Array(data.deckCount).fill('c0'); 
 
-            // Fix: Rakip kartları için sabit özel kartlar ('opp_0' .. 'opp_3') kullanıyoruz (Hayalet kart uçuşmasını tamamen çözer)
-            GameState.botHand = [];
-            for (let i = 0; i < data.opponentHandCount; i++) {
-                GameState.botHand.push('opp_' + i);
-            }
-
-            // Eğer rakip elinden bir kart oynadıysa, oynanan gerçek kartı önce rakibin el koordinatına ışınla ki oradan ortaya uçsun!
+            // Fix 2: Rakip kart이 oynandığında el koordinatından ortaya uçur
             if (data.playedByOpponent && data.lastPlayedCardId) {
                 const playedCardObj = allCards.find(c => c.id === data.lastPlayedCardId);
                 if (playedCardObj) {
@@ -450,46 +686,44 @@
                     playedCardObj.el.style.transition = 'none';
                     playedCardObj.el.style.left = `${startX}px`;
                     playedCardObj.el.style.top = `${startY}px`;
-                    playedCardObj.el.offsetHeight; // Reflow zorla
+                    playedCardObj.el.offsetHeight;
                     playedCardObj.el.style.transition = '';
                     AudioFX.tap();
                 }
             }
 
-            allCards.forEach(c => {
-                if (c.id.startsWith('opp_')) {
-                    if (GameState.botHand.includes(c.id)) {
-                        c.state = 'botHand'; c.faceUp = false;
-                    } else {
-                        c.state = 'hiddenPool'; c.faceUp = false;
-                    }
-                    return;
-                }
+            // Fix 14: Pişti kartlarının state çakışmasını önlemek için ID seti oluştur
+            const pistiSet = new Set();
+            GameState.playerPistiPairs.forEach(p => { pistiSet.add(p.bottom); pistiSet.add(p.top); });
+            GameState.botPistiPairs.forEach(p => { pistiSet.add(p.bottom); pistiSet.add(p.top); });
 
-                if (c.id.startsWith('hidden_')) {
-                    if (GameState.centerPile.includes(c.id)) {
-                        c.state = 'center'; c.faceUp = false;
-                        if (c.rot === 0) c.rot = (Math.random() * 20) - 10;
-                    } else {
-                        c.state = 'hiddenPool'; c.faceUp = false;
-                    }
-                    return;
-                }
+            // Fix 12: Eğer yeni el dağıtılıyorsa (isNewDeal), kartları tek blok yerine sırayla dağıt!
+            if (data.isNewDeal) {
+                GameState.isDealingAnim = true;
+                GameState.turn = 'none';
+                GameState.playerHand = [];
+                GameState.botHand = [];
+                syncCardStates(pistiSet);
+                renderBoard();
 
-                if (GameState.playerHand.includes(c.id)) {
-                    c.state = 'playerHand'; c.faceUp = true;
-                } else if (GameState.centerPile.includes(c.id)) {
-                    c.state = 'center'; 
-                    c.faceUp = true; // Gerçek ID ile centerPile'da olan her kart açıktır (kapalılar hidden_0..2 olarak gelir)
-                    if (c.rot === 0) c.rot = (Math.random() * 20) - 10; 
-                } else if (GameState.playerCaptured.includes(c.id)) {
-                    c.state = 'pCap'; c.faceUp = false;
-                } else if (GameState.botCaptured.includes(c.id)) {
-                    c.state = 'bCap'; c.faceUp = false;
-                } else {
-                    c.state = 'deck'; c.faceUp = false;
+                const maxLen = Math.max(data.myHand.length, data.opponentHandCount);
+                for (let i = 0; i < maxLen; i++) {
+                    if (data.myHand[i]) GameState.playerHand.push(data.myHand[i]);
+                    if (i < data.opponentHandCount) GameState.botHand.push('opp_' + i);
+                    syncCardStates(pistiSet);
+                    AudioFX.swoosh();
+                    renderBoard();
+                    await new Promise(r => setTimeout(r, 90));
                 }
-            });
+                GameState.isDealingAnim = false;
+            } else {
+                GameState.playerHand = data.myHand;
+                GameState.botHand = [];
+                for (let i = 0; i < data.opponentHandCount; i++) {
+                    GameState.botHand.push('opp_' + i);
+                }
+                syncCardStates(pistiSet);
+            }
 
             if (data.turn === 'none') {
                 GameState.turn = 'none';
@@ -500,6 +734,40 @@
             startClientTurnTimer(data.turnDeadline);
             renderBoard();
         });
+
+        function syncCardStates(pistiSet) {
+            allCards.forEach(c => {
+                if (pistiSet && pistiSet.has(c.id)) return; // Pişti kartlarına dokunma, renderBoard 'custom' olarak çizer
+
+                if (c.id.startsWith('opp_')) {
+                    c.state = GameState.botHand.includes(c.id) ? 'botHand' : 'hiddenPool';
+                    c.faceUp = false;
+                    return;
+                }
+                if (c.id.startsWith('hidden_')) {
+                    if (GameState.centerPile.includes(c.id)) {
+                        c.state = 'center'; c.faceUp = false;
+                        if (!c.hasRot) { c.rot = (Math.random() * 20) - 10; c.hasRot = true; }
+                    } else {
+                        c.state = 'hiddenPool'; c.faceUp = false; c.hasRot = false;
+                    }
+                    return;
+                }
+
+                if (GameState.playerHand.includes(c.id)) {
+                    c.state = 'playerHand'; c.faceUp = true; c.hasRot = false; c.rot = 0;
+                } else if (GameState.centerPile.includes(c.id)) {
+                    c.state = 'center'; c.faceUp = true;
+                    if (!c.hasRot) { c.rot = (Math.random() * 20) - 10; c.hasRot = true; }
+                } else if (GameState.playerCaptured.includes(c.id)) {
+                    c.state = 'pCap'; c.faceUp = false; c.hasRot = false; c.rot = 0;
+                } else if (GameState.botCaptured.includes(c.id)) {
+                    c.state = 'bCap'; c.faceUp = false; c.hasRot = false; c.rot = 0;
+                } else {
+                    c.state = 'deck'; c.faceUp = false; c.hasRot = false; c.rot = 0;
+                }
+            });
+        }
 
         socket.on('pistiEvent', (data) => {
             AudioFX.pisti();
@@ -675,6 +943,11 @@
         const botNames = { kolay: 'Emre', orta: 'Ahmet', zor: 'Yavuz' }; 
         const delay = ms => new Promise(res => setTimeout(res, ms * GameState.speedMultiplier));
 
+        // Fix 1: Sembolün mobil sistem emojisine dönüşmesini engelleyen yardımcı fonksiyon
+        function textSuit(s) {
+            return s ? (s + '\uFE0E') : '';
+        }
+
         function buildDeck() {
             const container = document.getElementById('cards-container'); 
             container.innerHTML = ''; 
@@ -689,13 +962,16 @@
                     const el = document.createElement('div'); 
                     el.className = 'playing-card'; 
                     el.id = cId;
-                    el.innerHTML = `<div class="card-inner"><div class="card-face card-front ${isRed ? 'red' : 'black'}"><div class="card-corner top"><span>${r}</span><span class="text-lg -mt-1">${s}</span></div><div class="card-center">${s}</div><div class="card-corner bottom"><span>${r}</span><span class="text-lg -mt-1">${s}</span></div></div><div class="card-face card-back"></div></div>`;
+                    const safeSuit = textSuit(s);
+                    el.innerHTML = `<div class="card-inner"><div class="card-face card-front ${isRed ? 'red' : 'black'}"><div class="card-corner top"><span>${r}</span><span class="card-sub">${safeSuit}</span></div><div class="card-center">${safeSuit}</div><div class="card-corner bottom"><span>${r}</span><span class="card-sub">${safeSuit}</span></div></div><div class="card-face card-back"></div></div>`;
                     
                     let isDragging = false, dragStartX = 0, dragStartY = 0;
                     el.addEventListener('pointerdown', (e) => {
-                        if (GameState.isPaused || GameState.turn !== 'player' || !GameState.playerHand.includes(cId)) return;
+                        // Fix 4: Multi-touch ve dağıtım animasyonu kilidi
+                        if (GameState.isPaused || GameState.isDealingAnim || activeDragCardId !== null || GameState.turn !== 'player' || !GameState.playerHand.includes(cId)) return;
                         AudioFX.init();
                         isDragging = true; 
+                        activeDragCardId = cId;
                         dragStartX = e.clientX; 
                         dragStartY = e.clientY; 
                         el.style.transition = 'none'; 
@@ -707,12 +983,29 @@
                             let dy = moveEvent.clientY - dragStartY; 
                             el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.05)`; 
                         };
-                        const upHandler = async (upEvent) => {
-                            if (!isDragging) return; 
-                            isDragging = false; 
+                        const cleanupDrag = () => {
+                            isDragging = false;
+                            if (activeDragCardId === cId) activeDragCardId = null;
+                            cancelActiveDragFn = null;
                             window.removeEventListener('pointermove', moveHandler); 
                             window.removeEventListener('pointerup', upHandler); 
+                            window.removeEventListener('pointercancel', cancelHandler);
                             el.style.transition = ''; 
+                        };
+                        const cancelHandler = () => {
+                            if (!isDragging) return;
+                            cleanupDrag();
+                            renderBoard();
+                        };
+                        cancelActiveDragFn = cancelHandler;
+
+                        const upHandler = async (upEvent) => {
+                            if (!isDragging) return; 
+                            cleanupDrag();
+                            if (GameState.isPaused || GameState.isDealingAnim || GameState.turn !== 'player' || !GameState.playerHand.includes(cId)) {
+                                renderBoard();
+                                return;
+                            }
                             let dy = upEvent.clientY - dragStartY; 
                             let dx = upEvent.clientX - dragStartX; 
                             if (dy < -60 || (Math.abs(dy) < 10 && Math.abs(dx) < 10)) { 
@@ -731,9 +1024,10 @@
                         }; 
                         window.addEventListener('pointermove', moveHandler); 
                         window.addEventListener('pointerup', upHandler);
+                        window.addEventListener('pointercancel', cancelHandler);
                     }); 
                     container.appendChild(el); 
-                    allCards.push({ id: cId, suit: s, rank: r, isRed: isRed, el: el, state: 'deck', faceUp: false, rot: 0 });
+                    allCards.push({ id: cId, suit: s, rank: r, isRed: isRed, el: el, state: 'deck', faceUp: false, rot: 0, hasRot: false });
                 }
             }
 
@@ -745,7 +1039,7 @@
                 el.id = dId;
                 el.innerHTML = `<div class="card-inner"><div class="card-face card-front black"></div><div class="card-face card-back"></div></div>`;
                 container.appendChild(el);
-                allCards.push({ id: dId, suit: null, rank: null, isRed: false, el: el, state: 'hiddenPool', faceUp: false, rot: 0 });
+                allCards.push({ id: dId, suit: null, rank: null, isRed: false, el: el, state: 'hiddenPool', faceUp: false, rot: 0, hasRot: false });
             });
         }
 
@@ -767,39 +1061,40 @@
             deckVis.style.boxShadow = shadow || 'none'; 
             deckVis.style.opacity = GameState.deck.length > 0 ? '1' : '0';
 
-            // Fix: Çoklu Pişti yapıldığında ekran dışına taşmayı önleyen dinamik aralık
+            // Fix 13: Çoklu Pişti yapıldığında ekran dışına taşmayı önleyen dinamik aralık
             const pistiCardIds = new Set();
-            let pSpacing = Math.min(isMob ? 45 : 75, Math.max(25, (w * 0.45) / Math.max(1, GameState.playerPistiPairs.length)));
+            let pSpacing = Math.min(isMob ? 42 : 70, Math.max(22, (w * 0.42) / Math.max(1, GameState.playerPistiPairs.length)));
             GameState.playerPistiPairs.forEach((pair, index) => { 
                 pistiCardIds.add(pair.bottom); pistiCardIds.add(pair.top); 
                 let xOffset = index * pSpacing; 
                 let bCard = allCards.find(c => c.id === pair.bottom); 
-                if (bCard) { bCard.state = 'custom'; bCard.targetX = (isMob ? 45 : 60) + xOffset; bCard.targetY = h - 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } 
+                if (bCard) { bCard.state = 'custom'; bCard.targetX = (isMob ? 42 : 60) + xOffset; bCard.targetY = h - 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } 
                 let tCard = allCards.find(c => c.id === pair.top); 
-                if (tCard) { tCard.state = 'custom'; tCard.targetX = (isMob ? 45 : 60) + xOffset + 18; tCard.targetY = h - 60 + 8; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } 
+                if (tCard) { tCard.state = 'custom'; tCard.targetX = (isMob ? 42 : 60) + xOffset + 16; tCard.targetY = h - 60 + 8; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } 
             });
 
-            let bSpacing = Math.min(isMob ? 45 : 75, Math.max(25, (w * 0.45) / Math.max(1, GameState.botPistiPairs.length)));
+            let bSpacing = Math.min(isMob ? 42 : 70, Math.max(22, (w * 0.42) / Math.max(1, GameState.botPistiPairs.length)));
             GameState.botPistiPairs.forEach((pair, index) => { 
                 pistiCardIds.add(pair.bottom); pistiCardIds.add(pair.top); 
                 let xOffset = index * bSpacing; 
                 let bCard = allCards.find(c => c.id === pair.bottom); 
-                if (bCard) { bCard.state = 'custom'; bCard.targetX = w - (isMob ? 45 : 60) - xOffset; bCard.targetY = 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } 
+                if (bCard) { bCard.state = 'custom'; bCard.targetX = w - (isMob ? 42 : 60) - xOffset; bCard.targetY = 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } 
                 let tCard = allCards.find(c => c.id === pair.top); 
-                if (tCard) { tCard.state = 'custom'; tCard.targetX = w - (isMob ? 45 : 60) - xOffset - 18; tCard.targetY = 60 + 8; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } 
+                if (tCard) { tCard.state = 'custom'; tCard.targetX = w - (isMob ? 42 : 60) - xOffset - 16; tCard.targetY = 60 + 8; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } 
             });
 
             allCards.forEach(c => {
                 let top, left, zIdx, trans = ''; 
                 c.el.classList.toggle('face-up', c.faceUp); 
-                c.el.classList.toggle('playable', c.state === 'playerHand' && GameState.turn === 'player');
+                c.el.classList.toggle('playable', c.state === 'playerHand' && GameState.turn === 'player' && !GameState.isDealingAnim);
                 if (c.state === 'custom') { 
                     top = c.targetY; left = c.targetX; zIdx = c.targetZ; 
                     trans = `translate(-50%, -50%) rotate(${c.rot}deg)`; 
                 } else {
                     switch (c.state) {
-                        case 'hiddenPool': top = -250; left = cx; zIdx = 0; trans = `translate(-50%, -50%) scale(0.1)`; break;
-                        case 'deck': top = deckY; left = deckX; zIdx = Math.max(0, GameState.deck.indexOf(c.id)); trans = `translate(-50%, -50%)`; break;
+                        // Fix 12: Yedek kart havuzu sol taraftaki destenin altında gizlenir, böylece dağıtılırken desteden çıkar!
+                        case 'hiddenPool': top = deckY; left = deckX; zIdx = 0; trans = `translate(-50%, -50%) scale(0.01)`; break;
+                        case 'deck': top = deckY; left = deckX; zIdx = Math.max(1, GameState.deck.indexOf(c.id)); trans = `translate(-50%, -50%)`; break;
                         case 'center': top = cy; left = cx; let pileIndex = GameState.centerPile.indexOf(c.id); zIdx = pileIndex !== -1 ? 100 + pileIndex : 300; trans = `translate(-50%, -50%) rotate(${c.rot}deg)`; break;
                         case 'playerHand': let pi = GameState.playerHand.indexOf(c.id); let pSpace = isMob ? 40 : 60; let px = cx - ((GameState.playerHand.length - 1) * pSpace) / 2 + (pi * pSpace); top = h - (isMob ? 60 : 80); left = px; zIdx = 200 + pi; trans = `translate(-50%, -50%)`; break;
                         case 'botHand': let bi = GameState.botHand.indexOf(c.id); let bSpace = isMob ? 40 : 60; let bx = cx - ((GameState.botHand.length - 1) * bSpace) / 2 + (bi * bSpace); top = isMob ? 60 : 80; left = bx; zIdx = 200 + bi; trans = `translate(-50%, -50%)`; break;
@@ -842,14 +1137,13 @@
             document.getElementById('bot-name-score').innerText = currentBotName;
             document.getElementById('player-turn-text').innerText = "🎯 SIRA SENDE";
             
-            // Sadece 52 gerçek kartı desteye al (opp_ ve hidden_ kartlarını alma)
             GameState.deck = allCards.filter(c => c.suit !== null).map(c => c.id); 
             for (let i = GameState.deck.length - 1; i > 0; i--) { 
                 const j = Math.floor(Math.random() * (i + 1)); 
                 [GameState.deck[i], GameState.deck[j]] = [GameState.deck[j], GameState.deck[i]]; 
             }
 
-            // Kural Fix: Yere açılacak 4. kart (sondan 4. çekilecek kart) Vale (J) ise yerini değiştir
+            // Fix 5: Yere açılacak 4. kart Vale (J) ise yerini değiştir
             let fourthCardIdx = GameState.deck.length - 4;
             while (allCards.find(x => x.id === GameState.deck[fourthCardIdx]).rank === 'J') {
                 let jackId = GameState.deck.splice(fourthCardIdx, 1)[0];
@@ -866,6 +1160,7 @@
                 c.state = 'center'; 
                 c.faceUp = (i === 3); 
                 c.rot = Math.random() * 20 - 10; 
+                c.hasRot = true;
                 GameState.centerPile.push(id); 
                 if (i < 3) GameState.initialHiddenIds.push(id); 
                 AudioFX.swoosh(); 
@@ -880,6 +1175,7 @@
             if (GameState.deck.length === 0) { await finishGame(); return; }
             let preserveTurn = GameState.turn; 
             GameState.turn = 'none'; 
+            GameState.isDealingAnim = true;
             renderBoard();
             
             for (let i = 0; i < 4; i++) { 
@@ -895,6 +1191,7 @@
                 GameState.botHand.push(bid); 
                 AudioFX.swoosh(); renderBoard(); await delay(100); 
             }
+            GameState.isDealingAnim = false;
             GameState.turn = preserveTurn; 
             renderBoard(); 
             if (GameState.turn === 'bot') scheduleBotMove();
@@ -922,7 +1219,7 @@
             hand.splice(hand.indexOf(cId), 1);
             
             let card = allCards.find(c => c.id === cId); 
-            card.state = 'center'; card.faceUp = true; card.rot = Math.random() * 30 - 15;
+            card.state = 'center'; card.faceUp = true; card.rot = Math.random() * 30 - 15; card.hasRot = true;
             
             let topId = GameState.centerPile.length > 0 ? GameState.centerPile[GameState.centerPile.length - 1] : null; 
             let topCard = topId ? allCards.find(c => c.id === topId) : null;
@@ -958,7 +1255,7 @@
             }
         }
 
-        function promptRevealModal() {
+        function promptRevealModal(autoClose = false) {
             return new Promise(resolve => {
                 const modal = document.getElementById('reveal-modal'); 
                 const container = document.getElementById('reveal-cards-container'); 
@@ -969,21 +1266,26 @@
                 GameState.initialHiddenIds.forEach(id => { 
                     const c = allCards.find(x => x.id === id); 
                     if (!c || !c.rank) return;
-                    container.innerHTML += `<div class="static-card ${c.isRed ? 'red' : 'black'}"><div class="s-corner top"><span>${c.rank}</span><span class="text-sm -mt-1">${c.suit}</span></div><div class="s-center">${c.suit}</div><div class="s-corner bottom"><span>${c.rank}</span><span class="text-sm -mt-1">${c.suit}</span></div></div>`; 
+                    const safeSuit = textSuit(c.suit);
+                    container.innerHTML += `<div class="static-card ${c.isRed ? 'red' : 'black'}"><div class="s-corner top"><span>${c.rank}</span><span class="card-sub">${safeSuit}</span></div><div class="s-center">${safeSuit}</div><div class="s-corner bottom"><span>${c.rank}</span><span class="card-sub">${safeSuit}</span></div></div>`; 
                 });
                 BotAI.updateMemory(GameState.initialHiddenIds); 
                 modal.classList.remove('hidden');
                 
+                let autoTimer = null;
+                const doClose = () => {
+                    clearTimeout(autoTimer);
+                    modal.classList.add('hidden'); 
+                    modal.removeEventListener('click', closeAction); 
+                    closeBtn.removeEventListener('click', closeAction); 
+                    resolve(); 
+                };
                 const closeAction = (e) => { 
-                    if (e.target === closeBtn || !box.contains(e.target)) { 
-                        modal.classList.add('hidden'); 
-                        modal.removeEventListener('click', closeAction); 
-                        closeBtn.removeEventListener('click', closeAction); 
-                        resolve(); 
-                    } 
+                    if (e.target === closeBtn || !box.contains(e.target)) doClose();
                 }; 
                 modal.addEventListener('click', closeAction); 
                 closeBtn.addEventListener('click', closeAction);
+                if (autoClose) autoTimer = setTimeout(doClose, 4000);
             });
         }
 
@@ -992,7 +1294,7 @@
             BotAI.updateMemory(GameState.centerPile);
             if (GameState.isFirstCapture) { 
                 GameState.isFirstCapture = false; 
-                if (actor === 'player') await promptRevealModal(); 
+                if (actor === 'player') await promptRevealModal(false); 
             }
             if (isPisti) {
                 AudioFX.pisti(); 
@@ -1016,7 +1318,7 @@
             let targetState = actor === 'player' ? 'pCap' : 'bCap'; 
             GameState.centerPile.forEach(id => { 
                 let c = allCards.find(x => x.id === id); 
-                if (c) { c.state = targetState; c.faceUp = false; }
+                if (c) { c.state = targetState; c.faceUp = false; c.rot = 0; c.hasRot = false; }
                 targetStash.push(id); 
             }); 
             GameState.centerPile = []; 
@@ -1116,7 +1418,7 @@
                 document.getElementById('next-round-btn').classList.add('hidden'); 
                 document.getElementById('restart-match-btn').classList.remove('hidden');
                 
-                let oppName = GameState.gameMode === 'multiplayer' ? 'Rakip' : botNames[GameState.botDifficulty];
+                let oppName = GameState.gameMode === 'multiplayer' ? GameState.opponentName : botNames[GameState.botDifficulty];
 
                 if (pScoreMatch > bScoreMatch) { 
                     title.innerText = "🏆 Maçı Sen Kazandın!"; 
@@ -1195,12 +1497,25 @@
         }
 
         window.onload = () => {
-            // Rage-Quit / Yarım bırakılan Multiplayer maç cezası kontrolü
+            // Aktif oturum kontrolü
+            const savedUserKey = localStorage.getItem('pistiActiveUser');
+            const db = AuthManager.getUsersDB();
+            if (savedUserKey && db[savedUserKey]) {
+                AuthManager.currentUser = db[savedUserKey];
+                GameState.username = AuthManager.currentUser.username;
+                GameState.elo = AuthManager.currentUser.elo || 0;
+                localStorage.setItem('pistiElo', GameState.elo);
+                document.getElementById('auth-screen').classList.add('hidden');
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+            }
+
+            // Fix 16: Rage-Quit / Yarım bırakılan Multiplayer maç cezası kontrolü
             if (localStorage.getItem('inProgressMultiplayer') === 'true') {
                 localStorage.removeItem('inProgressMultiplayer');
                 GameState.elo = Math.max(0, GameState.elo - 15);
                 localStorage.setItem('pistiElo', GameState.elo);
-                setTimeout(() => showToast("Önceki maçtan erken çıktığın için -15 ELO ceza aldın.", "⚠️"), 500);
+                setTimeout(() => showToast("Önceki online maçtan erken çıktığın için -15 ELO ceza aldın.", "⚠️"), 600);
             }
 
             updateMenuRankUI();
@@ -1221,7 +1536,7 @@
             let savedSpeed = sessionStorage.getItem('gameSpeed'); 
             if (savedSpeed) { speedSlider.value = savedSpeed; speedSlider.dispatchEvent(new Event('input')); }
             
-            if (sessionStorage.getItem('autoStart') === 'true') { 
+            if (sessionStorage.getItem('autoStart') === 'true' && AuthManager.currentUser) { 
                 sessionStorage.removeItem('autoStart'); 
                 let lastMode = sessionStorage.getItem('lastGameMode') || 'single';
                 if (lastMode === 'multiplayer') {
@@ -1251,7 +1566,7 @@
             }); 
         });
         
-        // Ayarlar Menüsü Duraklatma (Pause) Kontrolü
+        // Fix 15: Ayarlar Menüsü Duraklatma (Pause) Kontrolü
         const settingsModal = document.getElementById('settings-modal'); 
         document.getElementById('settings-btn').addEventListener('click', () => {
             GameState.isPaused = true;
@@ -1266,13 +1581,20 @@
             }
         });
         
+        // Fix 16: Multiplayer maç henüz bitmemişse Ayarlar'dan çıkışta inProgressMultiplayer bayrağını silme ki kaçak cezası işlesin
         function returnToMainMenu() {
-            localStorage.removeItem('inProgressMultiplayer');
+            const isGameOverVisible = !document.getElementById('game-over-modal').classList.contains('hidden');
+            if (GameState.gameMode !== 'multiplayer' || isGameOverVisible) {
+                localStorage.removeItem('inProgressMultiplayer');
+            }
             location.reload();
         }
 
         function triggerRestartMatch() { 
-            localStorage.removeItem('inProgressMultiplayer');
+            const isGameOverVisible = !document.getElementById('game-over-modal').classList.contains('hidden');
+            if (GameState.gameMode !== 'multiplayer' || isGameOverVisible) {
+                localStorage.removeItem('inProgressMultiplayer');
+            }
             sessionStorage.setItem('autoStart', 'true'); 
             sessionStorage.setItem('lastGameMode', GameState.gameMode); 
             location.reload(); 
