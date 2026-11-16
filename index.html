@@ -171,7 +171,7 @@
         </div>
 
         <div id="player-turn-indicator" class="absolute bottom-[130px] md:bottom-[160px] left-1/2 -translate-x-1/2 z-40 transition-opacity duration-300 opacity-0 pointer-events-none">
-            <div class="bg-green-900/80 border border-green-500 text-green-300 px-4 py-1 rounded-full text-sm font-bold shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-pulse">
+            <div id="player-turn-text" class="bg-green-900/80 border border-green-500 text-green-300 px-4 py-1 rounded-full text-sm font-bold shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-pulse">
                 🎯 SIRA SENDE
             </div>
         </div>
@@ -207,7 +207,7 @@
 
             <button id="resume-btn" class="w-full bg-blue-600/90 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-blue-400/30">Oyuna Dön</button>
             <button onclick="triggerRestartMatch()" class="w-full bg-yellow-600/90 hover:bg-yellow-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-yellow-400/30">Mevcut Maçı Sıfırla</button>
-            <button onclick="location.reload()" class="w-full bg-red-600/90 hover:bg-red-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-red-400/30">Ana Menüye Dön</button>
+            <button onclick="returnToMainMenu()" class="w-full bg-red-600/90 hover:bg-red-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all border border-red-400/30">Ana Menüye Dön</button>
         </div>
     </div>
 
@@ -267,6 +267,7 @@
         const socket = io(); 
         let currentRoomId = null;
         let acceptTimerInterval = null;
+        let turnCountdownInterval = null;
         let toastTimeout = null;
 
         // 1. TOAST BİLDİRİM FONKSİYONU
@@ -285,18 +286,21 @@
             deck: [], centerPile: [], playerHand: [], botHand: [], playerCaptured: [], botCaptured: [], playerPistiPairs: [], botPistiPairs: [],
             pScore: 0, bScore: 0, turn: 'none', lastCapturer: null, isFirstCapture: true, initialHiddenIds: [], botDifficulty: 'orta',
             elBaslayici: 'player', speedMultiplier: 1.0, soundEnabled: true, totalPScore: 0, totalBScore: 0, targetScore: 101, gameMode: 'single',
+            isPaused: false, pendingBotMove: false,
             elo: parseInt(localStorage.getItem('pistiElo') || '0', 10),
             ResetForNewMatch() {
                 this.deck = []; this.centerPile = []; this.playerHand = []; this.botHand = [];
                 this.playerCaptured = []; this.botCaptured = []; this.playerPistiPairs = []; this.botPistiPairs = [];
                 this.pScore = 0; this.bScore = 0; this.turn = 'none'; this.lastCapturer = null;
                 this.isFirstCapture = true; this.initialHiddenIds = [];
+                this.isPaused = false; this.pendingBotMove = false;
+                clearInterval(turnCountdownInterval);
             },
             calcStandardPoints(stash) { 
                 let pts = 0; 
                 stash.forEach(id => { 
                     let c = allCards.find(x => x.id === id); 
-                    if (!c) return;
+                    if (!c || !c.rank) return;
                     if (c.rank === 'A' || c.rank === 'J') pts += 1; 
                     if (c.rank === '10' && c.suit === '♦') pts += 3; 
                     if (c.rank === '2' && c.suit === '♣') pts += 2; 
@@ -304,6 +308,14 @@
                 return pts; 
             }
         };
+
+        function updateMenuRankUI() {
+            let currentRank = getRankDetails(GameState.elo);
+            document.getElementById('menu-elo').innerText = GameState.elo;
+            document.getElementById('menu-rank-icon').innerText = currentRank.icon;
+            document.getElementById('menu-rank-title').innerText = currentRank.title;
+            document.getElementById('menu-rank-title').className = `text-xs font-black uppercase tracking-wider ${currentRank.color}`;
+        }
 
         // 3. MULTIPLAYER: EŞLEŞTİRME VE SOKET YÖNETİMİ
         function findMultiplayerMatch() {
@@ -359,6 +371,7 @@
             clearInterval(acceptTimerInterval);
             GameState.ResetForNewMatch();
             GameState.gameMode = 'multiplayer';
+            localStorage.setItem('inProgressMultiplayer', 'true'); // Rage-quit takibi
             document.getElementById('hud-tournament').style.display = 'none';
             document.getElementById('match-accept-screen').classList.add('hidden');
             document.getElementById('game-over-modal').classList.add('hidden');
@@ -371,22 +384,41 @@
             renderBoard();
         });
 
+        // İlk kesmeyi yapan oyuncuya sunucudan gelen gerçek 3 kapalı kartı göster
+        socket.on('revealInitialCards', (hiddenIds) => {
+            GameState.initialHiddenIds = hiddenIds;
+            promptRevealModal();
+        });
+
+        socket.on('autoPlayedTimeout', () => {
+            showToast("Süren dolduğu için otomatik kart oynandı!", "⏳");
+        });
+
+        // Multiplayer Hamle Geri Sayım Görseli
+        function startClientTurnTimer(deadline) {
+            clearInterval(turnCountdownInterval);
+            if (!deadline || GameState.turn === 'none') {
+                document.getElementById('player-turn-text').innerText = "🎯 SIRA SENDE";
+                return;
+            }
+            const updateTimerUI = () => {
+                let rem = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+                if (GameState.turn === 'player') {
+                    document.getElementById('player-turn-text').innerText = `🎯 SIRA SENDE (${rem}sn)`;
+                } else if (GameState.turn === 'bot') {
+                    document.getElementById('bot-turn-text').innerText = `🔄 RAKİP DÜŞÜNÜYOR... (${rem}sn)`;
+                }
+                if (rem <= 0) clearInterval(turnCountdownInterval);
+            };
+            updateTimerUI();
+            turnCountdownInterval = setInterval(updateTimerUI, 500);
+        }
+
         // SUNUCUDAN GELEN BİLGİYİ MASAYA AKTARMA
         socket.on('gameUpdate', (data) => {
             if (!allCards || allCards.length === 0) { buildDeck(); }
 
-            // Oyun başında dağıtılan ilk 3 kapalı kartı hafızaya al
-            if (GameState.initialHiddenIds.length === 0 && data.centerPile.length === 4 && data.myCaptured.length === 0 && data.opponentCaptured.length === 0) {
-                GameState.initialHiddenIds = [data.centerPile[0], data.centerPile[1], data.centerPile[2]];
-            }
-
-            // Fix: Multiplayer'da ilk kesmeyi oyuncu yaptığında kapalı 3 kartı göster
-            if (GameState.isFirstCapture && (data.myCaptured.length > 0 || data.opponentCaptured.length > 0)) {
-                GameState.isFirstCapture = false;
-                if (data.myCaptured.length > 0 && GameState.initialHiddenIds.length === 3) {
-                    promptRevealModal();
-                }
-            }
+            const prevOpponentHandCount = GameState.botHand.length;
 
             GameState.playerHand = data.myHand;
             GameState.centerPile = data.centerPile;
@@ -398,24 +430,57 @@
             GameState.botPistiPairs = data.opponentPistiPairs;
             GameState.deck = Array(data.deckCount).fill('c0'); 
 
-            // Fix: Rakibin kartlarını seçerken her seferinde farklı ID seçip kartların ekranda uçuşmasını önlemek için baştan sabit sıra kullan
+            // Fix: Rakip kartları için sabit özel kartlar ('opp_0' .. 'opp_3') kullanıyoruz (Hayalet kart uçuşmasını tamamen çözer)
             GameState.botHand = [];
-            let usedIds = new Set([...GameState.playerHand, ...GameState.centerPile, ...GameState.playerCaptured, ...GameState.botCaptured]);
-            let availableIds = allCards.map(c => c.id).filter(id => !usedIds.has(id));
-            for (let i = 0; i < data.opponentHandCount; i++) { 
-                if (availableIds[i]) GameState.botHand.push(availableIds[i]); 
+            for (let i = 0; i < data.opponentHandCount; i++) {
+                GameState.botHand.push('opp_' + i);
+            }
+
+            // Eğer rakip elinden bir kart oynadıysa, oynanan gerçek kartı önce rakibin el koordinatına ışınla ki oradan ortaya uçsun!
+            if (data.playedByOpponent && data.lastPlayedCardId) {
+                const playedCardObj = allCards.find(c => c.id === data.lastPlayedCardId);
+                if (playedCardObj) {
+                    const w = window.innerWidth;
+                    const isMob = w < 768;
+                    const bSpace = isMob ? 40 : 60;
+                    const slotIdx = Math.max(0, prevOpponentHandCount - 1);
+                    const startX = (w / 2) - ((prevOpponentHandCount - 1) * bSpace) / 2 + (slotIdx * bSpace);
+                    const startY = isMob ? 60 : 80;
+
+                    playedCardObj.el.style.transition = 'none';
+                    playedCardObj.el.style.left = `${startX}px`;
+                    playedCardObj.el.style.top = `${startY}px`;
+                    playedCardObj.el.offsetHeight; // Reflow zorla
+                    playedCardObj.el.style.transition = '';
+                    AudioFX.tap();
+                }
             }
 
             allCards.forEach(c => {
+                if (c.id.startsWith('opp_')) {
+                    if (GameState.botHand.includes(c.id)) {
+                        c.state = 'botHand'; c.faceUp = false;
+                    } else {
+                        c.state = 'hiddenPool'; c.faceUp = false;
+                    }
+                    return;
+                }
+
+                if (c.id.startsWith('hidden_')) {
+                    if (GameState.centerPile.includes(c.id)) {
+                        c.state = 'center'; c.faceUp = false;
+                        if (c.rot === 0) c.rot = (Math.random() * 20) - 10;
+                    } else {
+                        c.state = 'hiddenPool'; c.faceUp = false;
+                    }
+                    return;
+                }
+
                 if (GameState.playerHand.includes(c.id)) {
                     c.state = 'playerHand'; c.faceUp = true;
-                } else if (GameState.botHand.includes(c.id)) {
-                    c.state = 'botHand'; c.faceUp = false;
                 } else if (GameState.centerPile.includes(c.id)) {
                     c.state = 'center'; 
-                    // İlk 3 kart sadece ilk kesmeden önce yerdeyken kapalı durur; sonradan kesilmezse bile üstteki kartlar açık durur
-                    let idxInCenter = GameState.centerPile.indexOf(c.id);
-                    c.faceUp = !(GameState.isFirstCapture && idxInCenter < 3 && GameState.initialHiddenIds.includes(c.id));
+                    c.faceUp = true; // Gerçek ID ile centerPile'da olan her kart açıktır (kapalılar hidden_0..2 olarak gelir)
                     if (c.rot === 0) c.rot = (Math.random() * 20) - 10; 
                 } else if (GameState.playerCaptured.includes(c.id)) {
                     c.state = 'pCap'; c.faceUp = false;
@@ -426,24 +491,16 @@
                 }
             });
 
-            // Sıra bilgisi güncellemeleri
             if (data.turn === 'none') {
                 GameState.turn = 'none';
             } else {
                 GameState.turn = (data.turn === socket.id) ? 'player' : 'bot';
             }
 
-            if (GameState.turn === 'player') {
-                document.getElementById('bot-turn-text').innerText = ""; 
-                if (data.myHand.length > 0) AudioFX.swoosh(); 
-            } else if (GameState.turn === 'bot') {
-                document.getElementById('bot-turn-text').innerText = "🔄 RAKİP DÜŞÜNÜYOR...";
-            }
-            
+            startClientTurnTimer(data.turnDeadline);
             renderBoard();
         });
 
-        // Sunucudan Multiplayer Pişti Animasyonu Haberi
         socket.on('pistiEvent', (data) => {
             AudioFX.pisti();
             let isMe = data.player === socket.id;
@@ -455,7 +512,11 @@
             fireConfetti();
         });
 
-        socket.on('gameOver', () => { finishGame(); });
+        socket.on('gameOver', () => { 
+            localStorage.removeItem('inProgressMultiplayer');
+            clearInterval(turnCountdownInterval);
+            finishGame(); 
+        });
 
         socket.on('matchFailed', (data) => {
             clearInterval(acceptTimerInterval);
@@ -471,15 +532,12 @@
         });
 
         socket.on('opponentDisconnected', () => {
+            localStorage.removeItem('inProgressMultiplayer');
+            clearInterval(turnCountdownInterval);
             showToast("Rakip oyundan çıktı! Hükmen galip (+15 ELO)", "🏆");
             GameState.elo += 15; 
             localStorage.setItem('pistiElo', GameState.elo);
-            
-            let newRank = getRankDetails(GameState.elo);
-            document.getElementById('menu-elo').innerText = GameState.elo;
-            document.getElementById('menu-rank-icon').innerText = newRank.icon;
-            document.getElementById('menu-rank-title').innerText = newRank.title;
-            document.getElementById('menu-rank-title').className = `text-xs font-black uppercase tracking-wider ${newRank.color}`;
+            updateMenuRankUI();
 
             setTimeout(() => {
                 GameState.ResetForNewMatch();
@@ -545,7 +603,7 @@
         const BotAI = {
             memory: { seenCards: new Set() }, 
             reset() { this.memory.seenCards.clear(); }, 
-            updateMemory(ids) { ids.forEach(id => { let c = allCards.find(x => x.id === id); if (c) this.memory.seenCards.add(c); }); },
+            updateMemory(ids) { ids.forEach(id => { let c = allCards.find(x => x.id === id); if (c && c.rank) this.memory.seenCards.add(c); }); },
             decidePlay() {
                 let bCards = GameState.botHand.map(id => allCards.find(c => c.id === id)).filter(Boolean);
                 let topId = GameState.centerPile.length > 0 ? GameState.centerPile[GameState.centerPile.length - 1] : null; 
@@ -567,9 +625,9 @@
                     }
                     let seenRanks = {}; 
                     ranks.forEach(r => seenRanks[r] = 0); 
-                    this.memory.seenCards.forEach(c => { seenRanks[c.rank]++; }); 
+                    this.memory.seenCards.forEach(c => { if (c.rank) seenRanks[c.rank]++; }); 
                     bCards.forEach(c => seenRanks[c.rank]++); 
-                    GameState.centerPile.forEach(id => { let c = allCards.find(x => x.id === id); if (c) seenRanks[c.rank]++; });
+                    GameState.centerPile.forEach(id => { let c = allCards.find(x => x.id === id); if (c && c.rank) seenRanks[c.rank]++; });
                     let scoredCards = bCards.map(c => {
                         let remaining = 4 - seenRanks[c.rank]; 
                         let risk = remaining * 10; 
@@ -622,6 +680,8 @@
             container.innerHTML = ''; 
             let id = 0; 
             allCards = [];
+
+            // 52 Gerçek Kart
             for (let s of suits) {
                 for (let r of ranks) {
                     const isRed = s === '♥' || s === '♦'; 
@@ -633,7 +693,7 @@
                     
                     let isDragging = false, dragStartX = 0, dragStartY = 0;
                     el.addEventListener('pointerdown', (e) => {
-                        if (GameState.turn !== 'player' || !GameState.playerHand.includes(cId)) return;
+                        if (GameState.isPaused || GameState.turn !== 'player' || !GameState.playerHand.includes(cId)) return;
                         AudioFX.init();
                         isDragging = true; 
                         dragStartX = e.clientX; 
@@ -676,6 +736,17 @@
                     allCards.push({ id: cId, suit: s, rank: r, isRed: isRed, el: el, state: 'deck', faceUp: false, rot: 0 });
                 }
             }
+
+            // Multiplayer Anti-Cheat & Görsel Fix: Rakip elindeki kapalı kartlar (opp_0..3) ve yerdeki gizli kartlar (hidden_0..2)
+            const dummyIds = ['opp_0', 'opp_1', 'opp_2', 'opp_3', 'hidden_0', 'hidden_1', 'hidden_2'];
+            dummyIds.forEach(dId => {
+                const el = document.createElement('div');
+                el.className = 'playing-card';
+                el.id = dId;
+                el.innerHTML = `<div class="card-inner"><div class="card-face card-front black"></div><div class="card-face card-back"></div></div>`;
+                container.appendChild(el);
+                allCards.push({ id: dId, suit: null, rank: null, isRed: false, el: el, state: 'hiddenPool', faceUp: false, rot: 0 });
+            });
         }
 
         function renderBoard() {
@@ -696,22 +767,26 @@
             deckVis.style.boxShadow = shadow || 'none'; 
             deckVis.style.opacity = GameState.deck.length > 0 ? '1' : '0';
 
+            // Fix: Çoklu Pişti yapıldığında ekran dışına taşmayı önleyen dinamik aralık
             const pistiCardIds = new Set();
+            let pSpacing = Math.min(isMob ? 45 : 75, Math.max(25, (w * 0.45) / Math.max(1, GameState.playerPistiPairs.length)));
             GameState.playerPistiPairs.forEach((pair, index) => { 
                 pistiCardIds.add(pair.bottom); pistiCardIds.add(pair.top); 
-                let xOffset = index * 80; 
+                let xOffset = index * pSpacing; 
                 let bCard = allCards.find(c => c.id === pair.bottom); 
-                if (bCard) { bCard.state = 'custom'; bCard.targetX = 60 + xOffset; bCard.targetY = h - 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } 
+                if (bCard) { bCard.state = 'custom'; bCard.targetX = (isMob ? 45 : 60) + xOffset; bCard.targetY = h - 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } 
                 let tCard = allCards.find(c => c.id === pair.top); 
-                if (tCard) { tCard.state = 'custom'; tCard.targetX = 60 + xOffset + 25; tCard.targetY = h - 60 + 10; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } 
+                if (tCard) { tCard.state = 'custom'; tCard.targetX = (isMob ? 45 : 60) + xOffset + 18; tCard.targetY = h - 60 + 8; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } 
             });
+
+            let bSpacing = Math.min(isMob ? 45 : 75, Math.max(25, (w * 0.45) / Math.max(1, GameState.botPistiPairs.length)));
             GameState.botPistiPairs.forEach((pair, index) => { 
                 pistiCardIds.add(pair.bottom); pistiCardIds.add(pair.top); 
-                let xOffset = index * 80; 
+                let xOffset = index * bSpacing; 
                 let bCard = allCards.find(c => c.id === pair.bottom); 
-                if (bCard) { bCard.state = 'custom'; bCard.targetX = w - 60 - xOffset; bCard.targetY = 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } 
+                if (bCard) { bCard.state = 'custom'; bCard.targetX = w - (isMob ? 45 : 60) - xOffset; bCard.targetY = 60; bCard.targetZ = 50 + index * 2; bCard.faceUp = true; bCard.rot = -5; } 
                 let tCard = allCards.find(c => c.id === pair.top); 
-                if (tCard) { tCard.state = 'custom'; tCard.targetX = w - 60 - xOffset - 25; tCard.targetY = 60 + 10; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } 
+                if (tCard) { tCard.state = 'custom'; tCard.targetX = w - (isMob ? 45 : 60) - xOffset - 18; tCard.targetY = 60 + 8; tCard.targetZ = 50 + index * 2 + 1; tCard.faceUp = true; tCard.rot = 10; } 
             });
 
             allCards.forEach(c => {
@@ -723,6 +798,7 @@
                     trans = `translate(-50%, -50%) rotate(${c.rot}deg)`; 
                 } else {
                     switch (c.state) {
+                        case 'hiddenPool': top = -250; left = cx; zIdx = 0; trans = `translate(-50%, -50%) scale(0.1)`; break;
                         case 'deck': top = deckY; left = deckX; zIdx = Math.max(0, GameState.deck.indexOf(c.id)); trans = `translate(-50%, -50%)`; break;
                         case 'center': top = cy; left = cx; let pileIndex = GameState.centerPile.indexOf(c.id); zIdx = pileIndex !== -1 ? 100 + pileIndex : 300; trans = `translate(-50%, -50%) rotate(${c.rot}deg)`; break;
                         case 'playerHand': let pi = GameState.playerHand.indexOf(c.id); let pSpace = isMob ? 40 : 60; let px = cx - ((GameState.playerHand.length - 1) * pSpace) / 2 + (pi * pSpace); top = h - (isMob ? 60 : 80); left = px; zIdx = 200 + pi; trans = `translate(-50%, -50%)`; break;
@@ -764,12 +840,22 @@
             document.getElementById('bot-name-hud').innerText = currentBotName; 
             document.getElementById('bot-turn-text').innerText = `🤖 ${currentBotName.toUpperCase()} DÜŞÜNÜYOR...`; 
             document.getElementById('bot-name-score').innerText = currentBotName;
+            document.getElementById('player-turn-text').innerText = "🎯 SIRA SENDE";
             
-            GameState.deck = allCards.map(c => c.id); 
+            // Sadece 52 gerçek kartı desteye al (opp_ ve hidden_ kartlarını alma)
+            GameState.deck = allCards.filter(c => c.suit !== null).map(c => c.id); 
             for (let i = GameState.deck.length - 1; i > 0; i--) { 
                 const j = Math.floor(Math.random() * (i + 1)); 
                 [GameState.deck[i], GameState.deck[j]] = [GameState.deck[j], GameState.deck[i]]; 
             }
+
+            // Kural Fix: Yere açılacak 4. kart (sondan 4. çekilecek kart) Vale (J) ise yerini değiştir
+            let fourthCardIdx = GameState.deck.length - 4;
+            while (allCards.find(x => x.id === GameState.deck[fourthCardIdx]).rank === 'J') {
+                let jackId = GameState.deck.splice(fourthCardIdx, 1)[0];
+                GameState.deck.unshift(jackId);
+            }
+
             BotAI.reset(); 
             renderBoard(); 
             await delay(500);
@@ -811,7 +897,17 @@
             }
             GameState.turn = preserveTurn; 
             renderBoard(); 
-            if (GameState.turn === 'bot') setTimeout(botLogic, 800 * GameState.speedMultiplier);
+            if (GameState.turn === 'bot') scheduleBotMove();
+        }
+
+        function scheduleBotMove() {
+            setTimeout(() => {
+                if (GameState.isPaused) {
+                    GameState.pendingBotMove = true;
+                } else {
+                    botLogic();
+                }
+            }, 800 * GameState.speedMultiplier);
         }
 
         async function handleCardPlay(cId) { 
@@ -854,7 +950,7 @@
                 if (actor === 'player') { 
                     GameState.turn = 'bot'; 
                     renderBoard(); 
-                    setTimeout(botLogic, 800 * GameState.speedMultiplier); 
+                    scheduleBotMove();
                 } else { 
                     GameState.turn = 'player'; 
                     renderBoard(); 
@@ -872,7 +968,7 @@
                 
                 GameState.initialHiddenIds.forEach(id => { 
                     const c = allCards.find(x => x.id === id); 
-                    if (!c) return;
+                    if (!c || !c.rank) return;
                     container.innerHTML += `<div class="static-card ${c.isRed ? 'red' : 'black'}"><div class="s-corner top"><span>${c.rank}</span><span class="text-sm -mt-1">${c.suit}</span></div><div class="s-center">${c.suit}</div><div class="s-corner bottom"><span>${c.rank}</span><span class="text-sm -mt-1">${c.suit}</span></div></div>`; 
                 });
                 BotAI.updateMemory(GameState.initialHiddenIds); 
@@ -929,7 +1025,7 @@
         }
 
         async function botLogic() { 
-            if (GameState.botHand.length === 0) return; 
+            if (GameState.botHand.length === 0 || GameState.turn !== 'bot') return; 
             let chosenId = BotAI.decidePlay(); 
             await playCard(chosenId, 'bot'); 
         }
@@ -944,7 +1040,7 @@
             let details = { pisti: pistiScore, majority: isMajority ? 3 : 0, karo10: 0, sinek2: 0, asJ: 0 }; 
             stash.forEach(id => { 
                 let c = allCards.find(x => x.id === id); 
-                if (!c) return;
+                if (!c || !c.rank) return;
                 if (c.rank === 'A' || c.rank === 'J') details.asJ += 1; 
                 if (c.rank === '10' && c.suit === '♦') details.karo10 = 3; 
                 if (c.rank === '2' && c.suit === '♣') details.sinek2 = 2; 
@@ -991,7 +1087,6 @@
             let title = document.getElementById('winner-text'); 
             let mainTitle = document.getElementById('modal-title');
             
-            // Fix: Multiplayer ve Singleplayer tek el üzerinden biter; sadece Tournament 101'e uzar
             let isMatchOver = false;
             if (GameState.gameMode === 'single' || GameState.gameMode === 'multiplayer') {
                 isMatchOver = true;
@@ -1043,6 +1138,7 @@
                 if (GameState.elo < 0) GameState.elo = 0; 
                 localStorage.setItem('pistiElo', GameState.elo);
                 let newRank = getRankDetails(GameState.elo);
+                updateMenuRankUI();
 
                 let rankUpMsg = (oldRank.title !== newRank.title && eloChange > 0) ? `<div class="text-[10px] text-yellow-300 mt-1 uppercase animate-pulse">🎉 Yeni Rütbe: ${newRank.title}!</div>` : '';
                 let eloColor = eloChange >= 0 ? 'bg-green-600' : 'bg-red-600'; 
@@ -1099,11 +1195,15 @@
         }
 
         window.onload = () => {
-            let currentRank = getRankDetails(GameState.elo);
-            document.getElementById('menu-elo').innerText = GameState.elo;
-            document.getElementById('menu-rank-icon').innerText = currentRank.icon;
-            document.getElementById('menu-rank-title').innerText = currentRank.title;
-            document.getElementById('menu-rank-title').className = `text-xs font-black uppercase tracking-wider ${currentRank.color}`;
+            // Rage-Quit / Yarım bırakılan Multiplayer maç cezası kontrolü
+            if (localStorage.getItem('inProgressMultiplayer') === 'true') {
+                localStorage.removeItem('inProgressMultiplayer');
+                GameState.elo = Math.max(0, GameState.elo - 15);
+                localStorage.setItem('pistiElo', GameState.elo);
+                setTimeout(() => showToast("Önceki maçtan erken çıktığın için -15 ELO ceza aldın.", "⚠️"), 500);
+            }
+
+            updateMenuRankUI();
 
             let savedDiff = sessionStorage.getItem('botDifficulty');
             if (savedDiff) { 
@@ -1151,11 +1251,28 @@
             }); 
         });
         
+        // Ayarlar Menüsü Duraklatma (Pause) Kontrolü
         const settingsModal = document.getElementById('settings-modal'); 
-        document.getElementById('settings-btn').addEventListener('click', () => settingsModal.classList.remove('hidden')); 
-        document.getElementById('resume-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            GameState.isPaused = true;
+            settingsModal.classList.remove('hidden');
+        }); 
+        document.getElementById('resume-btn').addEventListener('click', () => {
+            GameState.isPaused = false;
+            settingsModal.classList.add('hidden');
+            if (GameState.pendingBotMove && GameState.turn === 'bot') {
+                GameState.pendingBotMove = false;
+                botLogic();
+            }
+        });
         
+        function returnToMainMenu() {
+            localStorage.removeItem('inProgressMultiplayer');
+            location.reload();
+        }
+
         function triggerRestartMatch() { 
+            localStorage.removeItem('inProgressMultiplayer');
             sessionStorage.setItem('autoStart', 'true'); 
             sessionStorage.setItem('lastGameMode', GameState.gameMode); 
             location.reload(); 
